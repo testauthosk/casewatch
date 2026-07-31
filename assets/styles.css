@@ -202,6 +202,15 @@ footer{ background:var(--navy); color:var(--on-navy); padding:56px 0 28px; margi
 /* reveal */
 html.js .rv{ opacity:0; transform:translateY(22px); transition:opacity .6s var(--ease), transform .6s var(--ease); }
 html.js .rv.in{ opacity:1; transform:none; }
+/* when GSAP drives the motion, it owns opacity/transform — kill the CSS transition so they don't double up */
+html.gsapx .rv{ transition:none; }
+html.gsapx .rv.in{ transition:none; }
+/* header lifts on scroll */
+header{ transition:box-shadow .25s var(--ease), background-color .25s var(--ease); }
+header.scrolled{ box-shadow:0 10px 34px -20px rgba(16,30,56,.5); background:rgba(245,248,252,.92); }
+@media (prefers-reduced-motion: reduce){
+  html.js .rv{ opacity:1 !important; transform:none !important; transition:none !important; }
+}
 
 /* drawer */
 .drawer{ position:fixed; inset:0; z-index:80; background:rgba(16,30,56,.4); opacity:0; pointer-events:none; transition:opacity .2s; }
