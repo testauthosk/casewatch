@@ -69,6 +69,25 @@ header{ position:sticky; top:0; z-index:50; background:rgba(245,248,252,.82); ba
 .field input,.field select{ width:100%; font-family:var(--sans); font-size:15px; color:var(--ink); background:var(--surface2); border:1px solid var(--line); border-radius:var(--r-sm); padding:12px 13px; }
 .field input.mono{ font-family:var(--mono); letter-spacing:.04em; }
 .field input:focus,.field select:focus{ outline:none; border-color:var(--acc); background:#fff; }
+/* custom country dropdown */
+.csel{ position:relative; }
+.cselbtn{ width:100%; font-family:var(--sans); font-size:15px; color:var(--ink); background:var(--surface2); border:1px solid var(--line); border-radius:var(--r-sm); padding:12px 13px; display:flex; align-items:center; gap:10px; cursor:pointer; text-align:left; transition:border-color .15s, background .15s; }
+.cselbtn .ph{ color:var(--muted); }
+.cselbtn .chev{ width:16px; height:16px; margin-left:auto; color:var(--ink2); transition:transform .22s var(--ease); flex:none; }
+.cselbtn:hover{ border-color:var(--line2); }
+.csel.open .cselbtn{ border-color:var(--acc); background:#fff; box-shadow:0 0 0 3px var(--acc-soft); }
+.csel.open .cselbtn .chev{ transform:rotate(180deg); }
+.cselopts{ position:absolute; left:0; right:0; top:calc(100% + 7px); z-index:30; background:var(--surface); border:1px solid var(--line); border-radius:var(--r-sm); box-shadow:0 22px 48px -20px rgba(16,30,56,.42); max-height:248px; overflow-y:auto; padding:5px; opacity:0; transform:translateY(-6px); pointer-events:none; transition:opacity .16s var(--ease), transform .16s var(--ease); }
+.csel.open .cselopts{ opacity:1; transform:none; pointer-events:auto; }
+.cselopts .o{ padding:10px 12px; border-radius:7px; cursor:pointer; font-size:14.5px; color:var(--ink); display:flex; align-items:center; justify-content:space-between; gap:10px; transition:background .12s, color .12s; }
+.cselopts .o:hover{ background:var(--acc-soft); color:var(--acc-d); }
+.cselopts .o.sel{ background:var(--acc-soft); color:var(--acc-d); font-weight:600; }
+.cselopts .o .tick{ width:15px; height:15px; flex:none; opacity:0; }
+.cselopts .o.sel .tick{ opacity:1; }
+.cselopts::-webkit-scrollbar{ width:9px; }
+.cselopts::-webkit-scrollbar-thumb{ background:var(--line2); border-radius:9px; border:2.5px solid var(--surface); }
+.cselopts::-webkit-scrollbar-track{ background:transparent; }
+.cselopts{ scrollbar-width:thin; scrollbar-color:var(--line2) transparent; }
 .checkcard .btn{ margin-top:14px; }
 .checkcard .fine{ font-size:12px; color:var(--muted); margin-top:12px; display:flex; align-items:center; gap:7px; }
 .checkcard .fine svg{ width:14px; height:14px; stroke:var(--muted); fill:none; stroke-width:1.7; flex:none; }

@@ -47,7 +47,13 @@
         <div class="t"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg> Check your case — free</div>
         <div class="row">
           <div class="field"><label>A-Number (9 digits)</label><input class="mono" id="anum" placeholder="240-974-400" maxlength="12"></div>
-          <div class="field"><label>Country of citizenship</label><select id="country"><option value="">Select…</option><option>Mexico</option><option>Guatemala</option><option>Honduras</option><option>El Salvador</option><option>Russia</option><option>Ukraine</option><option>India</option><option>China</option><option>Other…</option></select></div>
+          <div class="field"><label>Country of citizenship</label>
+            <div class="csel" id="csel">
+              <button type="button" class="cselbtn" id="cselbtn"><span id="csellabel" class="ph">Select country…</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="cselopts" id="cselopts" role="listbox"></div>
+              <input type="hidden" id="country" name="country">
+            </div>
+          </div>
         </div>
         <button class="btn btn-primary btn-block" onclick="demoCheck()">Check my case <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
         <div class="fine" id="checkfine"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg> Private &amp; secure. We only use your case number to look up EOIR — nothing else.</div>
@@ -231,6 +237,27 @@
   dr.querySelectorAll("a").forEach(function(a){a.onclick=function(){dr.classList.remove("on");};});
   var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target);}});},{threshold:.12,rootMargin:"0px 0px -6% 0px"});
   document.querySelectorAll(".rv").forEach(function(el,i){el.style.transitionDelay=(Math.min(i%3,2)*70)+"ms";io.observe(el);});
+
+  // custom country dropdown
+  (function(){
+    var COUNTRIES=["Mexico","Guatemala","Honduras","El Salvador","Venezuela","Cuba","Nicaragua","Colombia","Brazil","Ecuador","Haiti","Russia","Ukraine","Belarus","India","China","Other…"];
+    var wrap=document.getElementById("csel"); if(!wrap) return;
+    var btn=document.getElementById("cselbtn"), lab=document.getElementById("csellabel"),
+        opts=document.getElementById("cselopts"), hid=document.getElementById("country");
+    var tick='<svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+    opts.innerHTML=COUNTRIES.map(function(c){return '<div class="o" role="option" data-v="'+c+'"><span>'+c+'</span>'+tick+'</div>';}).join("");
+    opts.querySelectorAll(".o").forEach(function(o){
+      o.onclick=function(){
+        opts.querySelectorAll(".o").forEach(function(x){x.classList.remove("sel");});
+        o.classList.add("sel"); lab.textContent=o.dataset.v; lab.classList.remove("ph");
+        hid.value=o.dataset.v; wrap.classList.remove("open");
+      };
+    });
+    btn.onclick=function(e){ e.stopPropagation(); wrap.classList.toggle("open"); };
+    document.addEventListener("click",function(){ wrap.classList.remove("open"); });
+    document.addEventListener("keydown",function(e){ if(e.key==="Escape") wrap.classList.remove("open"); });
+  })();
+
   function demoCheck(){
     var a=document.getElementById("anum").value.trim();
     var f=document.getElementById("checkfine");
