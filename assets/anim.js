@@ -59,20 +59,24 @@
   G.set(".rv", { opacity: 0, y: 24 });
   G.set(".hero .mock", { y: 0, x: 46 });     // the status card glides in from the right
 
-  /* ---- hero entrance ---- */
+  /* ---- hero entrance ----
+     clearProps:"transform" once each element lands — GSAP otherwise leaves an inline
+     transform matrix, and any transform creates a stacking context (which was pushing
+     the country dropdown panel *under* the strip text below it). The mock keeps its
+     transform on purpose (it drives the scroll parallax). */
   G.timeline({ defaults: { ease: "power3.out" } })
-    .to(".hero .ey",        { opacity: 1, y: 0, duration: 0.55 })
-    .to(".hero h1",         { opacity: 1, y: 0, duration: 0.80 }, "-=0.30")
-    .to(".hero .lead",      { opacity: 1, y: 0, duration: 0.70 }, "-=0.55")
-    .to(".hero .checkcard", { opacity: 1, y: 0, duration: 0.70 }, "-=0.50")
-    .to(".hero .strip",     { opacity: 1, y: 0, duration: 0.60 }, "-=0.50")
+    .to(".hero .ey",        { opacity: 1, y: 0, duration: 0.55, clearProps: "transform" })
+    .to(".hero h1",         { opacity: 1, y: 0, duration: 0.80, clearProps: "transform" }, "-=0.30")
+    .to(".hero .lead",      { opacity: 1, y: 0, duration: 0.70, clearProps: "transform" }, "-=0.55")
+    .to(".hero .checkcard", { opacity: 1, y: 0, duration: 0.70, clearProps: "transform" }, "-=0.50")
+    .to(".hero .strip",     { opacity: 1, y: 0, duration: 0.60, clearProps: "transform" }, "-=0.50")
     .to(".hero .mock",      { opacity: 1, x: 0, duration: 0.90 }, "-=1.05");
 
   /* ---- scroll reveals for everything else ---- */
   ST.batch(".rv:not([data-hero])", {
     start: "top 86%",
     onEnter: function (b) {
-      G.to(b, { opacity: 1, y: 0, duration: 0.7, ease: "power3.out", stagger: 0.09, overwrite: true });
+      G.to(b, { opacity: 1, y: 0, duration: 0.7, ease: "power3.out", stagger: 0.09, overwrite: true, clearProps: "transform" });
     }
   });
 
