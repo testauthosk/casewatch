@@ -204,6 +204,6 @@ html.js .rv.in{ opacity:1; transform:none; }
   .checkcard .row{ grid-template-columns:1fr; }
   .plans{ grid-template-columns:1fr; }
   .trust .in{ gap:14px; } .trust .t{ font-size:12.5px; }
-  .fgrid{ grid-template-columns:1fr; } .fgrid .about{ grid-column:span 1; }
+  .fgrid{ grid-template-columns:1fr 1fr; gap:26px 22px; } .fgrid .about{ grid-column:span 2; }
   .fbot{ flex-direction:column; }
 }
