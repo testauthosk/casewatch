@@ -136,13 +136,19 @@
         });
     });
 
+    // код из шести цифр: как только набран — проверяем сами, кнопку жать не нужно
+    var otp = CW.codeInput(document.getElementById("code"), function () {
+      document.getElementById("btn2").click();
+    });
+
     document.getElementById("btn2").addEventListener("click", function () {
       var btn = this;
+      if (btn.disabled) return;
       CW.err(err2, "");
       CW.pending(btn, true, "Checking…");
       CW.api("/api/auth/verify", { email: email.value.trim(), code: document.getElementById("code").value })
         .then(function (r) {
-          if (r.status !== 200) { CW.pending(btn, false); return CW.err(err2, msg(r)); }
+          if (r.status !== 200) { CW.pending(btn, false); if (otp) otp.shake(); return CW.err(err2, msg(r)); }
           if (!carried) return location.replace("app.html");
           CW.api("/api/cases", carried).then(function () { location.replace("app.html"); });
         });

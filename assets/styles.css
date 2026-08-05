@@ -438,6 +438,34 @@ header.scrolled{ box-shadow:0 10px 34px -20px rgba(16,30,56,.5); background:rgba
 .btn-apple:hover{ background:#1a1a1a; box-shadow:0 3px 10px -4px rgba(0,0,0,.5); }
 .btn-apple svg{ width:18px; height:18px; margin-top:-2px; }
 .btn-oauth + .btn-apple, .btn-primary + .btn-oauth{ margin-top:10px; }
+/* ─── поле кода из письма ─── */
+.otp{ position:relative; }
+.otp input{ position:absolute; inset:0; width:100%; height:100%; opacity:0; z-index:2;
+  border:0; padding:0; font-size:16px; }          /* 16px — иначе iOS зумит страницу */
+.otp-cells{ display:grid; grid-template-columns:repeat(6,1fr); gap:8px; }
+.otp-cells span{ height:56px; display:grid; place-items:center; background:var(--surface2);
+  border:1.5px solid var(--line); border-radius:var(--r-sm);
+  font-family:var(--mono); font-size:24px; font-weight:500; color:var(--ink);
+  transition:border-color .18s var(--ease), background .18s var(--ease), box-shadow .18s var(--ease), transform .18s var(--ease); }
+.otp-cells span.filled{ background:#fff; border-color:var(--line2); }
+.otp-cells span.pop{ animation:otpPop .22s var(--ease); }
+@keyframes otpPop{ 0%{ transform:scale(.86); opacity:.4; } 100%{ transform:none; opacity:1; } }
+/* активная клетка светится и показывает мигающую черту вместо курсора */
+.otp.on .otp-cells span.now{ border-color:var(--acc); background:#fff; box-shadow:0 0 0 3px var(--acc-soft); }
+.otp.on .otp-cells span.now:empty::after{ content:""; width:2px; height:24px; background:var(--acc);
+  border-radius:2px; animation:otpCaret 1.05s steps(1,end) infinite; }
+@keyframes otpCaret{ 0%,50%{ opacity:1; } 51%,100%{ opacity:0; } }
+.otp.full .otp-cells span{ border-color:var(--acc); }
+.otp.bad .otp-cells{ animation:otpShake .38s var(--ease); }
+.otp.bad .otp-cells span{ border-color:#E5484D; }
+@keyframes otpShake{ 0%,100%{ transform:translateX(0);} 20%{ transform:translateX(-7px);} 40%{ transform:translateX(6px);} 60%{ transform:translateX(-4px);} 80%{ transform:translateX(2px);} }
+@media(max-width:380px){ .otp-cells{ gap:6px; } .otp-cells span{ height:50px; font-size:21px; } }
+@media(prefers-reduced-motion:reduce){
+  .otp-cells span.pop{ animation:none; }
+  .otp.bad .otp-cells{ animation:none; }
+  .otp.on .otp-cells span.now:empty::after{ animation:none; }
+}
+
 /* ─── пароль: полоса надёжности и список правил ─── */
 .field.has-eye{ position:relative; }
 .field.has-eye input{ padding-right:44px; }

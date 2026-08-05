@@ -176,6 +176,58 @@
     };
   };
 
+  /* Поле кода из письма. Приём тот же, что в известных реализациях (input-otp,
+     на нём построен shadcn): одно настоящее поле, а клетки — только рисунок.
+     Так остаются целыми вставка из буфера, автоподстановка кода из письма и
+     подсказка клавиатуры на телефоне, чего лишаются варианты из шести полей. */
+  CW.codeInput = function (input, onDone) {
+    if (!input || input.dataset.otp) return null;
+    input.dataset.otp = '1';
+    var LEN = Number(input.getAttribute('maxlength')) || 6;
+
+    var wrap = document.createElement('div');
+    wrap.className = 'otp';
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+
+    var cells = document.createElement('div');
+    cells.className = 'otp-cells';
+    cells.setAttribute('aria-hidden', 'true');
+    for (var i = 0; i < LEN; i++) cells.appendChild(document.createElement('span'));
+    wrap.appendChild(cells);
+    var slots = cells.children;
+
+    input.setAttribute('inputmode', 'numeric');
+    input.setAttribute('autocomplete', 'one-time-code');
+
+    function paint() {
+      var v = input.value.replace(/\D/g, '').slice(0, LEN);
+      if (v !== input.value) input.value = v;               // буквы в код не попадают
+      for (var i = 0; i < LEN; i++) {
+        var s = slots[i];
+        var had = s.textContent;
+        s.textContent = v[i] || '';
+        if (v[i] && !had) { s.classList.remove('pop'); void s.offsetWidth; s.classList.add('pop'); }
+        s.classList.toggle('filled', !!v[i]);
+        s.classList.toggle('now', document.activeElement === input && i === Math.min(v.length, LEN - 1));
+      }
+      wrap.classList.toggle('full', v.length === LEN);
+      if (v.length === LEN && onDone) onDone(v);
+    }
+
+    input.addEventListener('input', paint);
+    input.addEventListener('focus', function () { wrap.classList.add('on'); paint(); });
+    input.addEventListener('blur', function () { wrap.classList.remove('on'); paint(); });
+    paint();
+
+    return {
+      shake: function () {
+        wrap.classList.remove('bad'); void wrap.offsetWidth; wrap.classList.add('bad');
+        input.value = ''; paint(); input.focus();
+      },
+    };
+  };
+
   /* Свой выпадающий список вместо системного: тот рисуется операционной
      системой и выбивается из оформления. Родной <select> остаётся в разметке
      скрытым — он держит значение, поэтому остальной код о подмене не знает. */
