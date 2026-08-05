@@ -95,6 +95,16 @@ CREATE TABLE IF NOT EXISTS prefs (
   weekly   INTEGER NOT NULL DEFAULT 0
 );
 
+CREATE TABLE IF NOT EXISTS support (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id    INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  email      TEXT NOT NULL,
+  topic      TEXT,
+  text       TEXT NOT NULL,
+  delivered  INTEGER NOT NULL DEFAULT 0,     -- дошло ли до нас телеграмом/почтой
+  created_at INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS mail_log (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   email      TEXT NOT NULL,
@@ -156,6 +166,12 @@ const q = {
   initPrefs: db.prepare('INSERT OR IGNORE INTO prefs (user_id) VALUES (?)'),
   setPrefs: db.prepare(
     'UPDATE prefs SET hearing = ?, decision = ?, appeared = ?, weekly = ? WHERE user_id = ?'),
+
+  addTicket: db.prepare(
+    'INSERT INTO support (user_id, email, topic, text, delivered, created_at) VALUES (?, ?, ?, ?, ?, ?)'),
+  markTicket: db.prepare('UPDATE support SET delivered = 1 WHERE id = ?'),
+  recentTickets: db.prepare(
+    'SELECT COUNT(*) AS n FROM support WHERE user_id = ? AND created_at > ?'),
 
   logMail: db.prepare(
     'INSERT INTO mail_log (email, kind, ok, detail, created_at) VALUES (?, ?, ?, ?, ?)'),

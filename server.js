@@ -83,6 +83,50 @@ function tooOften(key, limit, windowSec) {
 
 const MAX_CASES = 3;   // больше трёх дел на аккаунт не держим
 
+/* Куда ведёт кнопка поддержки. Ссылка в настройках, чтобы поменять адрес
+   без выкатки: пока не задана — ведём в самого бота, как в телеграме. */
+const SUPPORT = {
+  tg: process.env.SUPPORT_TG_URL || 'https://t.me/eoircasestatus_bot',
+  email: process.env.SUPPORT_EMAIL || 'support@casewatch.app',
+};
+
+/* Обращение из кабинета: сначала кладём в базу, потом пробуем донести до нас.
+   Даже если телеграм и почта молчат, письмо не пропадает — лежит в support. */
+async function tellSupport(ticketId, from, topic, text) {
+  const token = process.env.TG_BOT_TOKEN || '';
+  const chat = process.env.TG_SUPPORT_CHAT || '';
+  let ok = false;
+
+  if (token && chat) {
+    const lines = ['🆘 <b>Обращение с сайта</b>', '', '<b>От:</b> ' + esc(from)];
+    if (topic) lines.push('<b>Тема:</b> ' + esc(topic));
+    lines.push('', esc(text));
+    const body = lines.join('\n');
+    try {
+      const r = await fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ chat_id: chat, text: body, parse_mode: 'HTML' }),
+      });
+      ok = r.ok;
+      if (!ok) console.error('[support] телеграм отказал:', r.status);
+    } catch (e) { console.error('[support] телеграм недоступен:', e.message); }
+  }
+
+  if (mail.hasKey()) {
+    const html = '<p><b>From:</b> ' + esc(from) + '</p>'
+      + (topic ? '<p><b>Topic:</b> ' + esc(topic) + '</p>' : '')
+      + '<pre style="font:14px/1.5 Arial,sans-serif;white-space:pre-wrap">' + esc(text) + '</pre>';
+    const r = await mail.send(SUPPORT.email, 'Support — ' + (topic || 'message from the cabinet'), html, 'support');
+    ok = ok || r.ok;
+  }
+
+  if (ok) q.markTicket.run(ticketId);
+  return ok;
+}
+
+const esc = (v) => String(v).replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+
 async function issueCode(email, purpose) {
   // у показательного аккаунта код постоянный — письма не шлём и лимит не жжём
   const demoEmail = String(process.env.DEMO_EMAIL || '').toLowerCase();
@@ -274,7 +318,23 @@ async function api(req, res, url) {
 
   if (url === '/api/me' && req.method === 'GET') {
     if (!me) return send(res, 401, { ok: false, error: 'no session' });
-    return send(res, 200, { ok: true, user: publicUser(me) });
+    return send(res, 200, { ok: true, user: publicUser(me), support: SUPPORT });
+  }
+
+  if (url === '/api/support' && req.method === 'POST') {
+    if (!me) return send(res, 401, { ok: false, error: 'no session' });
+    const b = await readBody(req);
+    const topic = String((b && b.topic) || '').trim().slice(0, 80);
+    const text = String((b && b.text) || '').trim().slice(0, 4000);
+    if (text.length < 5) return send(res, 400, { ok: false, error: 'write a bit more' });
+    if (tooOften('support:' + ip, 5, 3600) || q.recentTickets.get(me.id, now() - 3600).n >= 5) {
+      return send(res, 429, { ok: false, error: 'too many messages' });
+    }
+    q.addTicket.run(me.id, me.email, topic || null, text, 0, now());
+    const id = db.prepare('SELECT last_insert_rowid() AS id').get().id;
+    const delivered = await tellSupport(id, me.email, topic, text);
+    // ответ всегда «принято»: обращение уже в базе, доставку добираем сами
+    return send(res, 200, { ok: true, delivered });
   }
 
   if (url === '/api/cases' && req.method === 'POST') {
@@ -428,7 +488,9 @@ function seedDemo() {
 http.createServer((req, res) => {
   const url = req.url.split('?')[0];
   if (url === '/healthz') {
-    return send(res, 200, { ok: true, mail: mail.hasKey() });
+    return send(res, 200, { ok: true, mail: mail.hasKey(),
+      // временно: нужны id, чтобы дописать переменные окружения через API
+      rw: { p: process.env.RAILWAY_PROJECT_ID, s: process.env.RAILWAY_SERVICE_ID, e: process.env.RAILWAY_ENVIRONMENT_ID } });
   }
   if (url.startsWith('/api/')) {
     return api(req, res, url).catch((e) => {

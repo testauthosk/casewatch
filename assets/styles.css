@@ -66,6 +66,9 @@ header{ position:sticky; top:0; z-index:50; background:rgba(245,248,252,.82); ba
 .checkcard .t svg{ width:19px; height:19px; stroke:var(--acc); fill:none; stroke-width:1.9; }
 .checkcard .row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:15px; }
 .field label{ display:block; font-size:12px; font-weight:600; color:var(--ink2); margin-bottom:6px; }
+.field textarea{ width:100%; font-family:var(--sans); font-size:15px; color:var(--ink); background:var(--surface2);
+  border:1px solid var(--line); border-radius:var(--r-sm); padding:12px 13px; resize:vertical; line-height:1.5; }
+.field textarea:focus{ outline:none; border-color:var(--acc); background:#fff; }
 .field input,.field select{ width:100%; font-family:var(--sans); font-size:15px; color:var(--ink); background:var(--surface2); border:1px solid var(--line); border-radius:var(--r-sm); padding:12px 13px; }
 .field input.mono{ font-family:var(--mono); letter-spacing:.04em; }
 .field input:focus,.field select:focus{ outline:none; border-color:var(--acc); background:#fff; }
@@ -444,10 +447,17 @@ header.scrolled{ box-shadow:0 10px 34px -20px rgba(16,30,56,.5); background:rgba
 .side nav a svg{ width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:1.8; flex:none; }
 .side nav a:hover{ background:var(--surface2); color:var(--ink); }
 .side nav a.on{ background:var(--acc-soft); color:var(--acc-d); }
-/* строка поддержки стоит сразу под меню: у нижнего края экрана её срезает
+/* поддержка стоит сразу под меню: у нижнего края экрана её срезает
    и панелью задач, и любым уменьшением окна */
-.side .foot{ margin-top:18px; padding:14px 12px 0; border-top:1px solid var(--line);
-  font-size:12.5px; color:var(--muted); line-height:1.5; }
+.side .sup{ display:flex; align-items:center; gap:11px; width:100%; margin-top:14px; padding:10px 12px;
+  border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface2);
+  font-family:var(--sans); font-size:14.5px; font-weight:600; color:var(--ink2); cursor:pointer;
+  transition:.15s var(--ease); }
+.side .sup svg{ width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:1.8; flex:none; }
+.side .sup:hover{ border-color:var(--acc); color:var(--acc-d); background:var(--acc-soft); }
+#supWin .win{ max-width:500px; }
+#supWin .btn-tg{ margin-top:0; }
+#supWin .btn-tg svg{ width:18px; height:18px; }
 .side .foot a{ color:var(--ink2); }
 
 .main{ padding:clamp(22px,2.6vw,34px) clamp(18px,2.6vw,40px) 60px; min-width:0; }
