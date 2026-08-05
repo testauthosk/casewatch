@@ -494,8 +494,11 @@ header.scrolled{ box-shadow:0 10px 34px -20px rgba(16,30,56,.5); background:rgba
 
 /* код набран — по клеткам слева направо проходит волна */
 .otp.full .cell{ border-color:var(--acc); }
-.otp.win .cell{ background:var(--acc); border-color:var(--acc);
+.otp.win .cell,
+.otp.win.on .cell.now{ background:var(--acc); border-color:var(--acc); box-shadow:none;
   transition-duration:.16s; transition-delay:calc(var(--i) * 60ms); }
+/* последняя клетка активна, и её подсветка перебивала зелёную волну по весу правила */
+.otp.win .cell.now::after{ display:none; }
 /* цвет цифры меняем чуть позже фона, иначе на миг белое по белому */
 .otp.win .roll i{ color:#fff; transition:color .14s calc(var(--i) * 60ms + 60ms); }
 
