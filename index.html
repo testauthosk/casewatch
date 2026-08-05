@@ -44,18 +44,34 @@
       <p class="lead rv" data-hero>Stop calling the 1-800 hotline and logging in over and over. Check your immigration court case in seconds, and let CaseWatch watch it 24/7 — we'll alert you the instant anything moves.</p>
 
       <div class="checkcard rv" data-hero>
-        <div class="t"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg> Check your case — free</div>
+        <div class="t"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg> Check your case — free with an account</div>
         <div class="row">
-          <div class="field"><label>A-Number (9 digits)</label><input class="mono" id="anum" placeholder="240-974-400" maxlength="12"></div>
-          <div class="field"><label>Country of citizenship</label>
+          <div class="field" id="f-anum"><label>A-Number (9 digits)</label><input class="mono" id="anum" placeholder="240-974-400" maxlength="12" inputmode="numeric"><div class="err">Enter the nine digits from your court notice.</div></div>
+          <div class="field" id="f-country"><label>Country of citizenship</label>
             <div class="csel" id="csel">
               <button type="button" class="cselbtn" id="cselbtn"><span id="csellabel" class="ph">Select country…</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
               <div class="cselopts" id="cselopts" role="listbox"></div>
               <input type="hidden" id="country" name="country">
             </div>
+            <div class="err">Choose the country of citizenship.</div>
           </div>
         </div>
         <button class="btn btn-primary btn-block" onclick="demoCheck()">Check my case <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button>
+        <div class="gate">
+          <div class="t" style="margin-top:2px;"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> One step left</div>
+          <div class="sum">
+            <span class="an" id="g-anum">A240-974-400</span>
+            <span class="cn" id="g-country">Mexico</span>
+            <span class="edit" onclick="editCase()">Change</span>
+          </div>
+          <div class="why">
+            <svg viewBox="0 0 24 24"><path d="M12 3 4 7v5c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V7z"/><path d="M9.5 12.5 11 14l3.5-3.5"/></svg>
+            <span>Every check is a live lookup in the EOIR system. A free account keeps it fair — and lets us tell you the moment your case changes.</span>
+          </div>
+          <a class="btn btn-primary btn-block" id="g-signup" href="signup.html">Create a free account and check<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
+          <a class="btn btn-tg btn-block" id="g-tg" href="signup.html"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.9 4.3 18.7 19.4c-.24 1.07-.88 1.33-1.78.83l-4.92-3.63-2.37 2.28c-.26.26-.48.48-1 .48l.35-4.99 9.09-8.21c.4-.35-.09-.55-.61-.2L6.22 13.2 1.36 11.7c-1.06-.33-1.08-1.06.22-1.57l19-7.32c.88-.32 1.65.2 1.32 1.49z"/></svg>Continue with Telegram</a>
+          <div class="fine" style="margin-top:12px;">Already have an account? <a href="login.html" style="color:var(--acc-d);font-weight:700">Log in</a> — your case will be checked right away.</div>
+        </div>
         <div class="fine" id="checkfine"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Private &amp; secure. We only use your case number to look up EOIR — nothing else.</div>
       </div>
 
@@ -265,12 +281,30 @@
     document.addEventListener("keydown",function(e){ if(e.key==="Escape") wrap.classList.remove("open"); });
   })();
 
+  // Проверка дела — только после регистрации: каждый запрос это живой поход
+  // в систему EOIR, и отдавать его анонимно значит оплачивать чужой трафик.
   function demoCheck(){
-    var a=document.getElementById("anum").value.trim();
-    var f=document.getElementById("checkfine");
-    if(!a){ document.getElementById("anum").focus(); return; }
-    f.innerHTML='<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--acc)"><path d="M20 6 9 17l-5-5"/></svg> Preview only — the live checker connects to EOIR. <a href="signup.html" style="color:var(--acc);font-weight:700">Create a free account</a> to run a real check.';
+    var input=document.getElementById("anum");
+    var digits=input.value.replace(/\D/g,"");
+    var country=document.getElementById("country").value;
+    var fa=document.getElementById("f-anum"), fc=document.getElementById("f-country");
+    var ok=true;
+    if(digits.length!==9){ fa.classList.add("bad"); ok=false; } else fa.classList.remove("bad");
+    if(!country){ fc.classList.add("bad"); ok=false; } else fc.classList.remove("bad");
+    if(!ok){ (digits.length!==9?input:document.getElementById("cselbtn")).focus(); return; }
+
+    var pretty="A"+digits.slice(0,3)+"-"+digits.slice(3,6)+"-"+digits.slice(6);
+    document.getElementById("g-anum").textContent=pretty;
+    document.getElementById("g-country").textContent=country;
+    var q="?a="+encodeURIComponent(digits)+"&c="+encodeURIComponent(country);
+    document.getElementById("g-signup").href="signup.html"+q;
+    document.getElementById("g-tg").href="signup.html"+q+"&via=tg";
+    document.querySelector(".checkcard").classList.add("gated");
   }
+  function editCase(){ document.querySelector(".checkcard").classList.remove("gated"); }
+  document.addEventListener("input",function(e){
+    if(e.target.id==="anum") document.getElementById("f-anum").classList.remove("bad");
+  });
 </script>
 </body>
 </html>

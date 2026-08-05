@@ -202,6 +202,23 @@
 <script>
   document.documentElement.classList.remove("nojs");
   document.documentElement.classList.add("js");
+  // дело, пришедшее с главной, встаёт первым и показывается как проверяемое
+  (function(){
+    var q=new URLSearchParams(location.search), a=(q.get("a")||"").replace(/\D/g,""), c=q.get("c")||"";
+    if(a.length!==9) return;
+    var pretty="A"+a.slice(0,3)+"-"+a.slice(3,6)+"-"+a.slice(6);
+    var el=document.createElement("article");
+    el.className="case checking";
+    el.innerHTML='<div><div class="who"><b>Your new case</b>'
+      +'<span class="badge badge-off"><span class="spin"></span> Checking EOIR…</span></div>'
+      +'<div class="anum">'+pretty+' · '+c+'</div>'
+      +'<div class="meta"><div>What happens now<b>We are querying the EOIR system — usually under a minute</b></div>'
+      +'<div>Then<b>You will see the status here and get an alert on every change</b></div></div></div>'
+      +'<div class="side"><span class="sw on"><i></i> Monitoring</span><span class="upd">just added</span></div>';
+    var list=document.querySelector(".cases");
+    list.insertBefore(el, list.firstElementChild);
+  })();
+
   // макет: переключатель наблюдения отвечает на нажатие
   document.querySelectorAll(".sw").forEach(function (s) {
     s.addEventListener("click", function () {

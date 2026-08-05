@@ -335,3 +335,36 @@ header.scrolled{ box-shadow:0 10px 34px -20px rgba(16,30,56,.5); background:rgba
   .addcase .row{ grid-template-columns:1fr; }
   .plan-note{ flex-wrap:wrap; } .plan-note .btn{ margin-left:0; width:100%; }
 }
+
+/* ─────────── шлюз: проверка только после регистрации ─────────── */
+.gate{ display:none; }
+.checkcard.gated .gate{ display:block; }
+.checkcard.gated .row,
+.checkcard.gated > .btn,
+.checkcard.gated .fine,
+.checkcard.gated > .t{ display:none; }   /* в шлюзе свой заголовок, два подряд лишние */
+.gate .sum{ display:flex; align-items:center; gap:10px; background:var(--surface2); border:1px solid var(--line);
+  border-radius:var(--r-sm); padding:11px 13px; margin-top:14px; }
+.gate .sum .an{ font-family:var(--mono); font-size:14.5px; letter-spacing:.04em; }
+.gate .sum .cn{ font-size:13.5px; color:var(--ink2); }
+.gate .sum .edit{ margin-left:auto; font-size:13px; color:var(--acc-d); font-weight:600; cursor:pointer; }
+.gate .why{ font-size:13px; color:var(--ink2); line-height:1.55; margin-top:14px; display:flex; gap:9px; }
+.gate .why svg{ width:15px; height:15px; stroke:var(--acc); fill:none; stroke-width:1.9; flex:none; margin-top:2px; }
+.gate .btn{ margin-top:14px; }
+.gate .btn + .btn{ margin-top:9px; }
+.field .err{ display:none; font-size:12.5px; color:#B3453D; margin-top:5px; }
+.field.bad .err{ display:block; }
+.field.bad input,.field.bad .cselbtn{ border-color:#D98A84; background:#FDF6F5; }
+
+/* карточка дела, которое сейчас проверяется */
+.case.checking{ border-style:dashed; }
+.case.checking .who b{ color:var(--ink2); }
+.spin{ width:15px; height:15px; border:2px solid var(--line2); border-top-color:var(--acc); border-radius:50%;
+  display:inline-block; animation:sp 0.8s linear infinite; vertical-align:-2px; }
+@keyframes sp{ to{ transform:rotate(360deg); } }
+@media (prefers-reduced-motion: reduce){ .spin{ animation:none; } }
+
+.auth-card .sum{ display:flex; align-items:center; gap:10px; background:var(--surface2); border:1px solid var(--line);
+  border-radius:var(--r-sm); padding:11px 13px; margin-top:14px; }
+.auth-card .sum .an{ font-family:var(--mono); font-size:14px; letter-spacing:.04em; }
+.auth-card .sum .cn{ font-size:13px; color:var(--ink2); }

@@ -29,6 +29,10 @@
   <div class="auth-card">
     <h1>Create your account</h1>
     <p class="sub">Free — check one case right away. No card needed.</p>
+    <div class="sum" id="carry" style="display:none;">
+      <span class="an" id="c-anum"></span><span class="cn" id="c-country"></span>
+      <span class="cn" style="margin-left:auto;">will be checked</span>
+    </div>
 
     <div class="field">
       <label for="email">Email</label>
@@ -59,6 +63,17 @@
 <script>
   document.documentElement.classList.remove("nojs");
   document.documentElement.classList.add("js");
+  // дело, введённое на главной, доносим до кабинета — человек не вводит дважды
+  (function(){
+    var q=new URLSearchParams(location.search), a=(q.get("a")||"").replace(/\D/g,""), c=q.get("c")||"";
+    if(a.length!==9) return;
+    document.getElementById("c-anum").textContent="A"+a.slice(0,3)+"-"+a.slice(3,6)+"-"+a.slice(6);
+    document.getElementById("c-country").textContent=c;
+    document.getElementById("carry").style.display="flex";
+    document.querySelectorAll("button.btn").forEach(function(b){
+      b.setAttribute("onclick","location.href='app.html?a="+a+"&c="+encodeURIComponent(c)+"'");
+    });
+  })();
 </script>
 </body>
 </html>
