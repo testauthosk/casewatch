@@ -87,6 +87,12 @@
     return fab;
   }
 
+  /* в шторке слева места нет — веер целиком уводим вправо */
+  function spot(fab, i) {
+    var s = SPOTS[i] || { x: 0, y: 48 };
+    return fab.closest('.drawer') ? { x: s.x + 58, y: s.y } : s;
+  }
+
   function paint(fab, code) {
     var l = byCode(code);
     fab.querySelector('.lang-fab-cur').textContent = l.label;
@@ -95,7 +101,7 @@
       var act = o.dataset.l === code;
       o.setAttribute('aria-pressed', act ? 'true' : 'false');
       if (act) {
-        var s = SPOTS[i] || { x: 0, y: 48 };
+        var s = spot(fab, i);
         fab.querySelector('.lang-orb-puck').style.transform = fab.classList.contains('is-open')
           ? 'translate(' + s.x + 'px,' + s.y + 'px)' : 'scale(.2)';
       }
@@ -113,7 +119,7 @@
     fab.classList.add('is-open');
     fab.querySelector('.lang-fab-btn').setAttribute('aria-expanded', 'true');
     fab.querySelectorAll('.lang-orb').forEach(function (o, i) {
-      var s = SPOTS[i] || { x: 0, y: 48 };
+      var s = spot(fab, i);
       o.style.transitionDelay = (i * 45) + 'ms';
       o.style.transform = 'translate(' + s.x + 'px,' + s.y + 'px)';
     });

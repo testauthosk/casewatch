@@ -235,6 +235,8 @@ header.scrolled{ box-shadow:0 10px 34px -20px rgba(16,30,56,.5); background:rgba
 
 @media(max-width:900px){
   .nav .lk,.nav .act{ display:none; } .burger{ display:flex; }
+  /* на входе и регистрации бургера нет — там шапка остаётся целиком */
+  .auth-page .nav .act{ display:flex; }
   .hero-grid{ grid-template-columns:1fr; gap:36px; }
   .steps,.feats{ grid-template-columns:1fr; }
   .tg .in{ grid-template-columns:1fr; gap:28px; }
@@ -473,6 +475,8 @@ header.scrolled{ box-shadow:0 10px 34px -20px rgba(16,30,56,.5); background:rgba
   pointer-events:none; opacity:0; transform:scale(.2);
   transition:transform .34s cubic-bezier(.34,1.56,.64,1), opacity .2s ease; }
 .lang-fab.is-open .lang-orb-puck{ opacity:1; }
+
+.drawer .pn .lang-fab{ margin-top:18px; align-self:flex-start; }
 
 /* короткое сообщение внизу экрана */
 .toast{ position:fixed; left:50%; bottom:26px; transform:translate(-50%,14px); z-index:200;
