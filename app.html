@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
+<script defer src="assets/app.js"></script>
 </head>
 <body>
 
@@ -24,7 +25,8 @@
     </nav>
     <div class="me">
       <span class="lang">EN ▾</span>
-      <div class="avatar">MR</div>
+      <div class="avatar" id="ava">·</div>
+      <a href="#" id="out" class="login" style="font-size:14px;">Log out</a>
     </div>
   </div>
 </div>
@@ -52,65 +54,7 @@
       <a href="index.html#pricing" class="btn btn-navy">See plans</a>
     </div>
 
-    <div class="cases">
-
-      <article class="case">
-        <div>
-          <div class="who">
-            <b>Maria Rodriguez</b>
-            <span class="badge badge-warn">Removal proceedings</span>
-          </div>
-          <div class="anum">A240-974-400 · Mexico</div>
-          <div class="meta">
-            <div>Next hearing<b class="num">May 14, 2026 · 9:00 AM</b></div>
-            <div>Court<b>Chicago, IL — Immigration Court</b></div>
-            <div>Judge decision<b>Pending</b></div>
-          </div>
-        </div>
-        <div class="side">
-          <span class="sw on"><i></i> Monitoring</span>
-          <span class="upd">Checked 2 min ago</span>
-        </div>
-      </article>
-
-      <article class="case">
-        <div>
-          <div class="who">
-            <b>Jose Ramirez</b>
-            <span class="badge badge-ok">Case closed</span>
-          </div>
-          <div class="anum">A215-330-118 · Guatemala</div>
-          <div class="meta">
-            <div>Next hearing<b>None scheduled</b></div>
-            <div>Court<b>Miami, FL — Immigration Court</b></div>
-            <div>Judge decision<b>Terminated</b></div>
-          </div>
-        </div>
-        <div class="side">
-          <span class="sw"><i></i> Monitoring off</span>
-          <span class="upd">Checked yesterday</span>
-        </div>
-      </article>
-
-      <article class="case">
-        <div>
-          <div class="who">
-            <b>Andrii Kovalenko</b>
-            <span class="badge badge-none">No case found</span>
-          </div>
-          <div class="anum">A251-887-002 · Ukraine</div>
-          <div class="meta">
-            <div>What this means<b>EOIR has no record for this A-number yet</b></div>
-            <div>We keep watching<b>Daily</b></div>
-          </div>
-        </div>
-        <div class="side">
-          <span class="sw on"><i></i> Monitoring</span>
-          <span class="upd">Checked 1 h ago</span>
-        </div>
-      </article>
-
-    </div>
+    <div class="cases" id="cases"></div>
 
     <div class="grid2">
       <div>
@@ -203,28 +147,84 @@
 <script>
   document.documentElement.classList.remove("nojs");
   document.documentElement.classList.add("js");
-  // дело, пришедшее с главной, встаёт первым и показывается как проверяемое
-  (function(){
-    var q=new URLSearchParams(location.search), a=(q.get("a")||"").replace(/\D/g,""), c=q.get("c")||"";
-    if(a.length!==9) return;
-    var pretty="A"+a.slice(0,3)+"-"+a.slice(3,6)+"-"+a.slice(6);
-    var el=document.createElement("article");
-    el.className="case checking";
-    el.innerHTML='<div><div class="who"><b>Your new case</b>'
-      +'<span class="badge badge-off"><span class="spin"></span> Checking EOIR…</span></div>'
-      +'<div class="anum">'+pretty+' · '+c+'</div>'
-      +'<div class="meta"><div>What happens now<b>We are querying the EOIR system — usually under a minute</b></div>'
-      +'<div>Then<b>You will see the status here and get an alert on every change</b></div></div></div>'
-      +'<div class="side"><span class="sw on"><i></i> Monitoring</span><span class="upd">just added</span></div>';
-    var list=document.querySelector(".cases");
-    list.insertBefore(el, list.firstElementChild);
-  })();
 
-  // макет: переключатель наблюдения отвечает на нажатие
-  document.querySelectorAll(".sw").forEach(function (s) {
-    s.addEventListener("click", function () {
-      s.classList.toggle("on");
-      s.lastChild.textContent = s.classList.contains("on") ? " Monitoring" : " Monitoring off";
+  window.addEventListener("DOMContentLoaded", function () {
+    var box = document.getElementById("cases");
+
+    function badge(c) {
+      if (c.status === "pending") return '<span class="badge badge-off"><span class="spin"></span> Checking EOIR…</span>';
+      if (c.status === "found") return '<span class="badge badge-warn">' + (c.decision || "In proceedings") + '</span>';
+      if (c.status === "not_found") return '<span class="badge badge-none">No case found</span>';
+      return '<span class="badge badge-off">Check failed</span>';
+    }
+
+    function row(label, value) {
+      return value ? '<div>' + label + '<b>' + value + '</b></div>' : '';
+    }
+
+    function render(user) {
+      document.getElementById("ava").textContent = (user.email || "?").slice(0, 2).toUpperCase();
+      if (!user.cases.length) {
+        box.innerHTML = '<div class="addcase" style="text-align:center;">'
+          + '<h3 style="justify-content:center;">No cases yet</h3>'
+          + '<p class="hint">Add your A-Number below and we will check it and keep watching.</p></div>';
+        return;
+      }
+      box.innerHTML = user.cases.map(function (c) {
+        var meta = c.status === "pending"
+          ? row("What happens now", "We are querying the EOIR system — usually under a minute")
+          : row("Next hearing", c.hearingAt || "None scheduled") + row("Court", c.court) + row("Judge decision", c.decision);
+        return '<article class="case' + (c.status === "pending" ? " checking" : "") + '" data-id="' + c.id + '">'
+          + '<div><div class="who"><b>' + (c.name || "Case " + CW.pretty(c.aNumber)) + '</b>' + badge(c) + '</div>'
+          + '<div class="anum">' + CW.pretty(c.aNumber) + ' · ' + c.country + '</div>'
+          + '<div class="meta">' + meta + '</div></div>'
+          + '<div class="side"><span class="sw' + (c.monitoring ? " on" : "") + '"><i></i> '
+          + (c.monitoring ? "Monitoring" : "Monitoring off") + '</span>'
+          + '<span class="upd">Checked ' + CW.ago(c.checkedAt) + '</span></div></article>';
+      }).join("");
+
+      box.querySelectorAll(".sw").forEach(function (sw) {
+        sw.addEventListener("click", function () {
+          var on = !sw.classList.contains("on");
+          sw.classList.toggle("on", on);
+          sw.lastChild.textContent = on ? " Monitoring" : " Monitoring off";
+          CW.api("/api/cases/monitoring", { id: Number(sw.closest(".case").dataset.id), on: on });
+        });
+      });
+    }
+
+    CW.requireUser().then(function (user) {
+      if (!user) return;
+      var carried = CW.carried();
+      if (carried) {
+        // дело пришло с главной сразу после регистрации
+        return CW.api("/api/cases", carried).then(function () {
+          history.replaceState({}, "", "app.html");
+          return CW.api("/api/me").then(function (r) { render(r.data.user); });
+        });
+      }
+      render(user);
+    });
+
+    document.querySelector(".addcase .btn").addEventListener("click", function () {
+      var btn = this;
+      var a = document.getElementById("anum").value.replace(/\D/g, "");
+      var c = document.getElementById("country").value.trim();
+      if (a.length !== 9 || !c) { document.getElementById(a.length !== 9 ? "anum" : "country").focus(); return; }
+      CW.pending(btn, true, "Adding…");
+      CW.api("/api/cases", { aNumber: a, country: c }).then(function (r) {
+        CW.pending(btn, false);
+        if (r.status === 402) { alert("Free plan keeps one case. Turn on monitoring to add more."); return; }
+        if (r.status === 409) { alert("This case is already on your list."); return; }
+        if (r.status !== 200) { alert("Could not add the case. Try again."); return; }
+        document.getElementById("anum").value = ""; document.getElementById("country").value = "";
+        render(r.data.user);
+      });
+    });
+
+    document.getElementById("out").addEventListener("click", function (e) {
+      e.preventDefault();
+      CW.api("/api/auth/logout", {}).then(function () { location.replace("login.html"); });
     });
   });
 </script>

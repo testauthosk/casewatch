@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
+<script defer src="assets/app.js"></script>
 </head>
 <body>
 
@@ -27,53 +28,120 @@
 
 <main class="auth">
   <div class="auth-card">
-    <h1>Create your account</h1>
-    <p class="sub">Free — check one case right away. No card needed.</p>
-    <div class="sum" id="carry" style="display:none;">
-      <span class="an" id="c-anum"></span><span class="cn" id="c-country"></span>
-      <span class="cn" style="margin-left:auto;">will be checked</span>
+
+    <div id="step1">
+      <h1>Create your account</h1>
+      <p class="sub">Free — check one case right away. No card needed.</p>
+
+      <div class="sum" id="carry" style="display:none;">
+        <span class="an" id="c-anum"></span>
+        <span class="cn" id="c-country"></span>
+        <span class="cn" style="margin-left:auto;">will be checked</span>
+      </div>
+
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" type="email" placeholder="you@email.com" autocomplete="email">
+      </div>
+      <div class="field">
+        <label for="pass">Password</label>
+        <input id="pass" type="password" placeholder="At least 8 characters" autocomplete="new-password">
+      </div>
+
+      <div class="ferr" id="err1"></div>
+
+      <button type="button" class="btn btn-primary btn-block" id="btn1">
+        Create account
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+
+      <div class="auth-sep">or</div>
+
+      <button type="button" class="btn btn-tg btn-block" onclick="location.href='https://t.me/eoircasestatus_bot'">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.9 4.3 18.7 19.4c-.24 1.07-.88 1.33-1.78.83l-4.92-3.63-2.37 2.28c-.26.26-.48.48-1 .48l.35-4.99 9.09-8.21c.4-.35-.09-.55-.61-.2L6.22 13.2 1.36 11.7c-1.06-.33-1.08-1.06.22-1.57l19-7.32c.88-.32 1.65.2 1.32 1.49z"/></svg>
+        Continue with Telegram
+      </button>
+
+      <p class="auth-alt">Already have an account? <a href="login.html">Log in</a></p>
+      <p class="auth-fine">By creating an account you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a>. CaseWatch is not affiliated with EOIR or any government agency.</p>
     </div>
 
-    <div class="field">
-      <label for="email">Email</label>
-      <input id="email" type="email" placeholder="you@email.com" autocomplete="email">
+    <div id="step2" style="display:none;">
+      <h1>Check your email</h1>
+      <p class="sub">We sent a six-digit code to <b id="sentTo"></b>. It works for ten minutes.</p>
+      <div class="field">
+        <label for="code">Code from the email</label>
+        <input id="code" class="mono" inputmode="numeric" maxlength="6" placeholder="000000" autocomplete="one-time-code">
+      </div>
+      <div class="ferr" id="err2"></div>
+      <button type="button" class="btn btn-primary btn-block" id="btn2">Confirm and continue</button>
+      <p class="auth-alt"><a href="#" id="again">Send the code again</a></p>
     </div>
-    <div class="field">
-      <label for="pass">Password</label>
-      <input id="pass" type="password" placeholder="At least 8 characters" autocomplete="new-password">
-    </div>
 
-    <button type="button" class="btn btn-primary btn-block" onclick="location.href='app.html'">
-      Create account
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-    </button>
-
-    <div class="auth-sep">or</div>
-
-    <button type="button" class="btn btn-tg btn-block" onclick="location.href='app.html'">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.9 4.3 18.7 19.4c-.24 1.07-.88 1.33-1.78.83l-4.92-3.63-2.37 2.28c-.26.26-.48.48-1 .48l.35-4.99 9.09-8.21c.4-.35-.09-.55-.61-.2L6.22 13.2 1.36 11.7c-1.06-.33-1.08-1.06.22-1.57l19-7.32c.88-.32 1.65.2 1.32 1.49z"/></svg>
-      Continue with Telegram
-    </button>
-
-    <p class="auth-alt">Already have an account? <a href="login.html">Log in</a></p>
-    <p class="auth-fine">By creating an account you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a>. CaseWatch is not affiliated with EOIR or any government agency.</p>
   </div>
 </main>
 
 <script>
   document.documentElement.classList.remove("nojs");
   document.documentElement.classList.add("js");
-  // дело, введённое на главной, доносим до кабинета — человек не вводит дважды
-  (function(){
-    var q=new URLSearchParams(location.search), a=(q.get("a")||"").replace(/\D/g,""), c=q.get("c")||"";
-    if(a.length!==9) return;
-    document.getElementById("c-anum").textContent="A"+a.slice(0,3)+"-"+a.slice(3,6)+"-"+a.slice(6);
-    document.getElementById("c-country").textContent=c;
-    document.getElementById("carry").style.display="flex";
-    document.querySelectorAll("button.btn").forEach(function(b){
-      b.setAttribute("onclick","location.href='app.html?a="+a+"&c="+encodeURIComponent(c)+"'");
+
+  // Регистрация в два шага: пароль, затем код с почты. Дело, введённое на
+  // главной, добавляем сразу после подтверждения — второй раз номер не спрашиваем.
+  window.addEventListener("DOMContentLoaded", function () {
+    var carried = CW.carried();
+    if (carried) {
+      document.getElementById("c-anum").textContent = CW.pretty(carried.aNumber);
+      document.getElementById("c-country").textContent = carried.country;
+      document.getElementById("carry").style.display = "flex";
+    }
+    var email = document.getElementById("email");
+    var step1 = document.getElementById("step1"), step2 = document.getElementById("step2");
+    var err1 = document.getElementById("err1"), err2 = document.getElementById("err2");
+
+    document.getElementById("btn1").addEventListener("click", function () {
+      var btn = this;
+      CW.err(err1, "");
+      CW.pending(btn, true, "Sending the code…");
+      CW.api("/api/auth/signup", { email: email.value.trim(), password: document.getElementById("pass").value })
+        .then(function (r) {
+          CW.pending(btn, false);
+          if (r.status !== 200) return CW.err(err1, msg(r));
+          document.getElementById("sentTo").textContent = email.value.trim();
+          step1.style.display = "none"; step2.style.display = "block";
+          document.getElementById("code").focus();
+        });
     });
-  })();
+
+    document.getElementById("btn2").addEventListener("click", function () {
+      var btn = this;
+      CW.err(err2, "");
+      CW.pending(btn, true, "Checking…");
+      CW.api("/api/auth/verify", { email: email.value.trim(), code: document.getElementById("code").value })
+        .then(function (r) {
+          if (r.status !== 200) { CW.pending(btn, false); return CW.err(err2, msg(r)); }
+          if (!carried) return location.replace("app.html");
+          CW.api("/api/cases", carried).then(function () { location.replace("app.html"); });
+        });
+    });
+
+    document.getElementById("again").addEventListener("click", function (e) {
+      e.preventDefault();
+      CW.api("/api/auth/resend", { email: email.value.trim(), purpose: "signup" })
+        .then(function (r) { CW.err(err2, r.status === 200 ? "" : msg(r)); });
+    });
+
+    function msg(r) {
+      var e = (r.data && r.data.error) || "";
+      if (e === "email in use") return "This email already has an account — log in instead.";
+      if (e === "password too short") return "Password needs at least 8 characters.";
+      if (e === "bad email") return "Check the email address.";
+      if (e === "wrong code") return "That code doesn't match. Check the email again.";
+      if (e === "code expired") return "The code expired — send a new one.";
+      if (e === "too many attempts") return "Too many tries. Send a new code.";
+      if (e === "slow down" || e === "too many codes") return "Too many attempts. Try again in an hour.";
+      return "Something went wrong. Try again.";
+    }
+  });
 </script>
 </body>
 </html>

@@ -1,0 +1,9 @@
+{
+  "name": "casewatch",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CaseWatch — U.S. immigration court case tracking",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=22" }
+}
