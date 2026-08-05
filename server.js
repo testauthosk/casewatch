@@ -377,7 +377,6 @@ function seedDemo() {
   q.markVerified.run(u.id);
   q.initPrefs.run(u.id);
   q.upsertChannel.run(u.id, 'email', 1, email, 1);
-  if (q.countCases.get(u.id).n) return;
 
   const day = 86400;
   const samples = [
@@ -395,15 +394,25 @@ function seedDemo() {
       ['added', 'Case added to monitoring — no record in EOIR yet', day * 9],
     ]],
   ];
+  const hasEvents = db.prepare('SELECT COUNT(*) AS n FROM events WHERE user_id = ? AND case_id = ?');
+  let added = 0;
   for (const [a, c, st, name, court, hearing, decision, events] of samples) {
-    q.addCase.run(u.id, a, c, now());
-    const row = q.caseByNumber.get(u.id, a);
-    db.prepare('UPDATE cases SET status=?, name=?, court=?, hearing_at=?, decision=?, checked_at=? WHERE id=?')
-      .run(st, name, court, hearing, decision, now() - 600, row.id);
+    let row = q.caseByNumber.get(u.id, a);
+    if (!row) {
+      q.addCase.run(u.id, a, c, now());
+      row = q.caseByNumber.get(u.id, a);
+      db.prepare('UPDATE cases SET status=?, name=?, court=?, hearing_at=?, decision=?, checked_at=? WHERE id=?')
+        .run(st, name, court, hearing, decision, now() - 600, row.id);
+      added++;
+    }
     // события привязаны к делу, иначе на странице дела пустая история
-    for (const [kind, text, ago] of events) q.addEvent.run(u.id, row.id, kind, text, now() - ago);
+    if (!hasEvents.get(u.id, row.id).n) {
+      for (const [kind, text, ago] of events) q.addEvent.run(u.id, row.id, kind, text, now() - ago);
+    }
   }
-  console.log('[demo] дела добавлены');
+  // старые демо-события без дела только мусорят ленту
+  db.prepare("DELETE FROM events WHERE user_id = ? AND case_id IS NULL AND kind <> 'note'").run(u.id);
+  if (added) console.log('[demo] дела добавлены:', added);
 }
 
 http.createServer((req, res) => {
