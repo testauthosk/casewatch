@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
+<script defer src="assets/app.js"></script>
 </head>
 <body>
 
@@ -17,22 +18,40 @@
       <svg class="mk" viewBox="0 0 32 32"><path d="M16 2 27 6v9c0 7-5 12-11 15C10 27 5 22 5 15V6z" fill="#12A98D"/><path d="M11 16l3.5 3.5L21 12" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <b>Case<span>Watch</span></b>
     </a>
-    <nav class="tabs">
-      <a href="app.html">My cases</a>
-      <a href="alerts.html" class="on">Alerts</a>
-      <a href="index.html#pricing">Plan</a>
-    </nav>
     <div class="me">
+      <div class="avatar" id="ava">·</div>
+      <a href="#" id="out" class="login" style="font-size:14px;">Log out</a>
       <span class="lang">EN ▾</span>
-      <div class="avatar">MR</div>
-    </div>
+          </div>
   </div>
 </div>
 
-<main class="app">
-  <div class="wrap">
+<div class="shell">
+  <aside class="side">
+    <div class="who">
+      <div class="avatar" id="ava2">·</div>
+      <div class="em" id="email">—</div>
+    </div>
+    <nav>
+      <a href="app.html">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        My cases
+      </a>
+      <a href="alerts.html" class="on">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+        Alerts
+      </a>
+      <a href="billing.html">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2"/><path d="M2.5 10h19"/></svg>
+        Plan &amp; billing
+      </a>
+    </nav>
+    <div class="foot">Questions? <a href="mailto:support@casewatch.app">support@casewatch.app</a></div>
+  </aside>
 
-    <div class="app-head">
+  <main class="main">
+
+    <div class="head">
       <div>
         <h1>Where we reach you</h1>
         <p>Your account lives here. Pick the places we should write to the moment a case moves — connect as many as you like.</p>
@@ -145,14 +164,27 @@
     </div>
 
     <p class="auth-fine" style="margin-top:34px;">CaseWatch is an independent service and is not affiliated with, endorsed by, or connected to the U.S. Department of Justice, the Executive Office for Immigration Review (EOIR), or any government agency.</p>
-  </div>
-</main>
+  </main>
+</div>
 
 <script>
   document.documentElement.classList.remove("nojs");
   document.documentElement.classList.add("js");
   document.querySelectorAll(".sw").forEach(function (s) {
     s.addEventListener("click", function () { s.classList.toggle("on"); });
+  });
+  window.addEventListener("DOMContentLoaded", function () {
+    CW.requireUser().then(function (user) {
+      if (!user) return;
+      var i = (user.email || "?").slice(0, 2).toUpperCase();
+      document.getElementById("ava").textContent = i;
+      document.getElementById("ava2").textContent = i;
+      document.getElementById("email").textContent = user.email;
+    });
+    document.getElementById("out").addEventListener("click", function (e) {
+      e.preventDefault();
+      CW.api("/api/auth/logout", {}).then(function () { location.replace("login.html"); });
+    });
   });
 </script>
 </body>

@@ -18,11 +18,6 @@
       <svg class="mk" viewBox="0 0 32 32"><path d="M16 2 27 6v9c0 7-5 12-11 15C10 27 5 22 5 15V6z" fill="#12A98D"/><path d="M11 16l3.5 3.5L21 12" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <b>Case<span>Watch</span></b>
     </a>
-    <nav class="tabs">
-      <a href="app.html" class="on">My cases</a>
-      <a href="alerts.html">Alerts</a>
-      <a href="index.html#pricing">Plan</a>
-    </nav>
     <div class="me">
       <span class="lang">EN ▾</span>
       <div class="avatar" id="ava">·</div>
@@ -31,118 +26,79 @@
   </div>
 </div>
 
-<main class="app">
-  <div class="wrap">
+<div class="shell">
+  <aside class="side">
+    <div class="who">
+      <div class="avatar" id="ava2">·</div>
+      <div class="em" id="email">—</div>
+    </div>
+    <nav>
+      <a href="app.html" class="on">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        My cases
+      </a>
+      <a href="alerts.html">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+        Alerts
+      </a>
+      <a href="billing.html">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2"/><path d="M2.5 10h19"/></svg>
+        Plan &amp; billing
+      </a>
+    </nav>
+    <div class="foot">Questions? <a href="mailto:support@casewatch.app">support@casewatch.app</a></div>
+  </aside>
 
-    <div class="app-head">
+  <main class="main">
+    <div class="head">
       <div>
         <h1>My cases</h1>
-        <p>We re-check every monitored case around the clock and tell you the moment anything moves.</p>
+        <p>We re-check every monitored case around the clock and write the moment anything moves.</p>
       </div>
-      <button type="button" class="btn btn-primary" onclick="document.getElementById('add').scrollIntoView({behavior:'smooth'})">
+      <button type="button" class="btn btn-primary" id="addBtn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
         Add a case
       </button>
     </div>
 
-    <div class="plan-note">
+    <div class="sum3" id="sum" hidden>
+      <div class="b"><div class="k">Cases</div><div class="v" id="s-total">—</div></div>
+      <div class="b"><div class="k">Monitored</div><div class="v" id="s-mon">—</div></div>
+      <div class="b"><div class="k">Next hearing</div><div class="v" id="s-next">—</div></div>
+    </div>
+
+    <div id="cases"></div>
+
+    <div class="plan-note" id="freeNote" hidden style="margin:22px 0 0;">
       <svg viewBox="0 0 24 24"><path d="M12 3 4 7v5c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V7z"/><path d="M9.5 12.5 11 14l3.5-3.5"/></svg>
       <div>
         <b>You're on the Free plan</b><br>
-        <span>One check a month, no alerts. Monitoring watches your case 24/7 and writes the second it changes.</span>
+        <span>One case, one check a month, no alerts.</span>
       </div>
-      <a href="index.html#pricing" class="btn btn-navy">See plans</a>
+      <a href="billing.html" class="btn btn-navy">Turn on monitoring</a>
     </div>
+  </main>
+</div>
 
-    <div class="cases" id="cases"></div>
-
-    <div class="grid2">
-      <div>
-        <div class="addcase" id="add">
-          <h3>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-            Add another case
-          </h3>
-          <p class="hint">Enter the nine-digit A-Number exactly as it appears on the court notice.</p>
-          <div class="row">
-            <div class="field">
-              <label for="anum">A-Number</label>
-              <input id="anum" class="mono" placeholder="240-974-400" inputmode="numeric" maxlength="13">
-            </div>
-            <div class="field">
-              <label for="country">Country of citizenship</label>
-              <input id="country" placeholder="Mexico">
-            </div>
-            <button type="button" class="btn btn-primary">Check case</button>
-          </div>
-        </div>
-
-        <div class="panel" style="margin-top:18px;" id="alerts">
-          <h3>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
-            What happened recently
-          </h3>
-          <div class="tl">
-            <div class="it new">
-              <div class="dot"></div>
-              <div>
-                <div class="when">Today · 06:12</div>
-                <div class="what"><b>Maria Rodriguez</b> — hearing moved from Apr 2 to <b>May 14, 2026</b></div>
-              </div>
-            </div>
-            <div class="it">
-              <div class="dot"></div>
-              <div>
-                <div class="when">Mar 28 · 14:03</div>
-                <div class="what"><b>Jose Ramirez</b> — case terminated, monitoring paused</div>
-              </div>
-            </div>
-            <div class="it">
-              <div class="dot"></div>
-              <div>
-                <div class="when">Mar 21 · 09:40</div>
-                <div class="what"><b>Andrii Kovalenko</b> — added to monitoring, no record yet</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <div class="panel">
-          <div class="tglink">
-            <div class="ic">
-              <svg viewBox="0 0 24 24"><path d="M21.9 4.3 18.7 19.4c-.24 1.07-.88 1.33-1.78.83l-4.92-3.63-2.37 2.28c-.26.26-.48.48-1 .48l.35-4.99 9.09-8.21c.4-.35-.09-.55-.61-.2L6.22 13.2 1.36 11.7c-1.06-.33-1.08-1.06.22-1.57l19-7.32c.88-.32 1.65.2 1.32 1.49z"/></svg>
-            </div>
-            <div>
-              <h3 style="display:block;">Get alerts in Telegram</h3>
-              <p class="hint" style="margin-top:3px;">Same account, same cases — just faster to read on the phone.</p>
-            </div>
-          </div>
-          <div class="code">CW-4823-19</div>
-          <p class="hint">Send this code to <b>@eoircasestatus_bot</b> and the two accounts become one.</p>
-          <a href="https://t.me/eoircasestatus_bot" class="btn btn-tg btn-block" style="margin-top:14px;">Open the bot</a>
-          <a href="alerts.html" class="btn btn-ghost btn-block" style="margin-top:9px;">All notification channels</a>
-        </div>
-
-        <div class="panel" style="margin-top:18px;" id="billing">
-          <h3>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2"/><path d="M2.5 10h19"/></svg>
-            Your plan
-          </h3>
-          <p class="hint">Free — 1 check a month.<br>Used this month: <b>1 of 1</b>.</p>
-          <div class="code" style="letter-spacing:0; font-family:var(--sans); font-size:14px; text-align:left;">
-            Monitoring — <b>$9.99/mo</b> or <b>$75/year</b><br>
-            24/7 re-checks · instant alerts · unlimited cases
-          </div>
-          <a href="index.html#pricing" class="btn btn-primary btn-block" style="margin-top:14px;">Turn on monitoring</a>
-        </div>
-      </div>
+<div class="modal" id="addWin">
+  <div class="win">
+    <h3>Add a case</h3>
+    <p class="hint">Enter the nine-digit A-Number exactly as it appears on the court notice.</p>
+    <div class="field" style="margin-top:16px;">
+      <label for="anum">A-Number</label>
+      <input id="anum" class="mono" placeholder="240-974-400" inputmode="numeric" maxlength="13">
     </div>
-
-    <p class="auth-fine" style="margin-top:34px;">CaseWatch is an independent service and is not affiliated with, endorsed by, or connected to the U.S. Department of Justice, the Executive Office for Immigration Review (EOIR), or any government agency. Case information is sourced from the public EOIR automated case information system.</p>
+    <div class="field" style="margin-top:12px;">
+      <label for="country">Country of citizenship</label>
+      <input id="country" placeholder="Mexico">
+    </div>
+    <div class="ferr" id="addErr"></div>
+    <div class="acts">
+      <button type="button" class="btn btn-ghost" id="addCancel">Cancel</button>
+      <button type="button" class="btn btn-primary" id="addGo">Check case</button>
+    </div>
   </div>
-</main>
+</div>
 
 <script>
   document.documentElement.classList.remove("nojs");
@@ -150,36 +106,51 @@
 
   window.addEventListener("DOMContentLoaded", function () {
     var box = document.getElementById("cases");
+    var win = document.getElementById("addWin");
 
     function badge(c) {
-      if (c.status === "pending") return '<span class="badge badge-off"><span class="spin"></span> Checking EOIR…</span>';
+      if (c.status === "pending") return '<span class="badge badge-off"><span class="spin"></span> Checking…</span>';
       if (c.status === "found") return '<span class="badge badge-warn">' + (c.decision || "In proceedings") + '</span>';
       if (c.status === "not_found") return '<span class="badge badge-none">No case found</span>';
       return '<span class="badge badge-off">Check failed</span>';
     }
 
-    function row(label, value) {
-      return value ? '<div>' + label + '<b>' + value + '</b></div>' : '';
+    function col(label, value) {
+      return '<div><div class="c-k">' + label + '</div><div class="c-v">' + (value || "—") + '</div></div>';
     }
 
     function render(user) {
-      document.getElementById("ava").textContent = (user.email || "?").slice(0, 2).toUpperCase();
+      var initials = (user.email || "?").slice(0, 2).toUpperCase();
+      document.getElementById("ava").textContent = initials;
+      document.getElementById("ava2").textContent = initials;
+      document.getElementById("email").textContent = user.email;
+      document.getElementById("freeNote").hidden = user.plan !== "free";
+
       if (!user.cases.length) {
-        box.innerHTML = '<div class="addcase" style="text-align:center;">'
-          + '<h3 style="justify-content:center;">No cases yet</h3>'
-          + '<p class="hint">Add your A-Number below and we will check it and keep watching.</p></div>';
+        document.getElementById("sum").hidden = true;
+        box.innerHTML = '<div class="empty"><h3>No cases yet</h3>'
+          + '<p>Add your A-Number and we will check it and keep watching.</p></div>';
         return;
       }
+
+      var mon = user.cases.filter(function (c) { return c.monitoring; }).length;
+      var next = user.cases.map(function (c) { return c.hearingAt; }).filter(Boolean).sort()[0];
+      document.getElementById("s-total").textContent = user.cases.length;
+      document.getElementById("s-mon").textContent = mon + " of " + user.cases.length;
+      document.getElementById("s-next").innerHTML = next
+        ? '<span>' + next.split(" · ")[0] + '</span>'
+        : '<small>none scheduled</small>';
+      document.getElementById("sum").hidden = false;
+
       box.innerHTML = user.cases.map(function (c) {
-        var meta = c.status === "pending"
-          ? row("What happens now", "We are querying the EOIR system — usually under a minute")
-          : row("Next hearing", c.hearingAt || "None scheduled") + row("Court", c.court) + row("Judge decision", c.decision);
-        return '<article class="case' + (c.status === "pending" ? " checking" : "") + '" data-id="' + c.id + '">'
-          + '<div><div class="who"><b>' + (c.name || "Case " + CW.pretty(c.aNumber)) + '</b>' + badge(c) + '</div>'
-          + '<div class="anum">' + CW.pretty(c.aNumber) + ' · ' + c.country + '</div>'
-          + '<div class="meta">' + meta + '</div></div>'
-          + '<div class="side"><span class="sw' + (c.monitoring ? " on" : "") + '"><i></i> '
-          + (c.monitoring ? "Monitoring" : "Monitoring off") + '</span>'
+        var cols = c.status === "pending"
+          ? col("Status", "Querying EOIR") + col("", "") + col("", "")
+          : col("Next hearing", c.hearingAt || "None scheduled") + col("Court", c.court) + col("Judge decision", c.decision);
+        return '<article class="row-case" data-id="' + c.id + '">'
+          + '<div><div class="nm"><b>' + (c.name || "Case " + CW.pretty(c.aNumber)) + '</b>' + badge(c) + '</div>'
+          + '<div class="an">' + CW.pretty(c.aNumber) + ' · ' + c.country + '</div></div>'
+          + cols
+          + '<div class="end"><span class="sw' + (c.monitoring ? " on" : "") + '"><i></i></span>'
           + '<span class="upd">Checked ' + CW.ago(c.checkedAt) + '</span></div></article>';
       }).join("");
 
@@ -187,37 +158,53 @@
         sw.addEventListener("click", function () {
           var on = !sw.classList.contains("on");
           sw.classList.toggle("on", on);
-          sw.lastChild.textContent = on ? " Monitoring" : " Monitoring off";
-          CW.api("/api/cases/monitoring", { id: Number(sw.closest(".case").dataset.id), on: on });
+          CW.api("/api/cases/monitoring", { id: Number(sw.closest(".row-case").dataset.id), on: on });
         });
       });
     }
 
-    CW.requireUser().then(function (user) {
-      if (!user) return;
-      var carried = CW.carried();
-      if (carried) {
-        // дело пришло с главной сразу после регистрации
-        return CW.api("/api/cases", carried).then(function () {
-          history.replaceState({}, "", "app.html");
-          return CW.api("/api/me").then(function (r) { render(r.data.user); });
-        });
-      }
-      render(user);
-    });
+    function load() {
+      return CW.api("/api/me").then(function (r) {
+        if (r.status !== 200) { location.replace("login.html"); return null; }
+        render(r.data.user);
+        return r.data.user;
+      });
+    }
 
-    document.querySelector(".addcase .btn").addEventListener("click", function () {
-      var btn = this;
+    var carried = CW.carried();
+    if (carried) {
+      CW.api("/api/cases", carried).then(function () {
+        history.replaceState({}, "", "app.html");
+        load();
+      });
+    } else {
+      load();
+    }
+
+    // добавление дела — окном, чтобы форма не висела на главном экране кабинета
+    document.getElementById("addBtn").addEventListener("click", function () {
+      win.classList.add("on");
+      document.getElementById("anum").focus();
+    });
+    document.getElementById("addCancel").addEventListener("click", function () { win.classList.remove("on"); });
+    win.addEventListener("click", function (e) { if (e.target === win) win.classList.remove("on"); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") win.classList.remove("on"); });
+
+    document.getElementById("addGo").addEventListener("click", function () {
+      var btn = this, err = document.getElementById("addErr");
       var a = document.getElementById("anum").value.replace(/\D/g, "");
       var c = document.getElementById("country").value.trim();
-      if (a.length !== 9 || !c) { document.getElementById(a.length !== 9 ? "anum" : "country").focus(); return; }
+      CW.err(err, "");
+      if (a.length !== 9 || !c) return CW.err(err, "Nine digits and the country, please.");
       CW.pending(btn, true, "Adding…");
       CW.api("/api/cases", { aNumber: a, country: c }).then(function (r) {
         CW.pending(btn, false);
-        if (r.status === 402) { alert("Free plan keeps one case. Turn on monitoring to add more."); return; }
-        if (r.status === 409) { alert("This case is already on your list."); return; }
-        if (r.status !== 200) { alert("Could not add the case. Try again."); return; }
-        document.getElementById("anum").value = ""; document.getElementById("country").value = "";
+        if (r.status === 402) return CW.err(err, "The Free plan keeps one case. Turn on monitoring to add more.");
+        if (r.status === 409) return CW.err(err, "This case is already on your list.");
+        if (r.status !== 200) return CW.err(err, "Could not add the case. Try again.");
+        document.getElementById("anum").value = "";
+        document.getElementById("country").value = "";
+        win.classList.remove("on");
         render(r.data.user);
       });
     });
