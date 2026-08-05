@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en" class="nojs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Create your CaseWatch account</title>
+<meta name="description" content="Create a free CaseWatch account to track your U.S. immigration court case and get alerts the moment it changes.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a href="index.html" class="brand">
+      <svg class="mk" viewBox="0 0 32 32"><path d="M16 2 27 6v9c0 7-5 12-11 15C10 27 5 22 5 15V6z" fill="#12A98D"/><path d="M11 16l3.5 3.5L21 12" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <b>Case<span>Watch</span></b>
+    </a>
+    <div class="act" style="margin-left:auto;">
+      <span class="lang">EN ▾</span>
+      <a href="login.html" class="login">Log in</a>
+    </div>
+  </div>
+</header>
+
+<main class="auth">
+  <div class="auth-card">
+    <h1>Create your account</h1>
+    <p class="sub">Free — check one case right away. No card needed.</p>
+
+    <div class="field">
+      <label for="email">Email</label>
+      <input id="email" type="email" placeholder="you@email.com" autocomplete="email">
+    </div>
+    <div class="field">
+      <label for="pass">Password</label>
+      <input id="pass" type="password" placeholder="At least 8 characters" autocomplete="new-password">
+    </div>
+
+    <button type="button" class="btn btn-primary btn-block" onclick="location.href='app.html'">
+      Create account
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </button>
+
+    <div class="auth-sep">or</div>
+
+    <button type="button" class="btn btn-tg btn-block" onclick="location.href='app.html'">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.9 4.3 18.7 19.4c-.24 1.07-.88 1.33-1.78.83l-4.92-3.63-2.37 2.28c-.26.26-.48.48-1 .48l.35-4.99 9.09-8.21c.4-.35-.09-.55-.61-.2L6.22 13.2 1.36 11.7c-1.06-.33-1.08-1.06.22-1.57l19-7.32c.88-.32 1.65.2 1.32 1.49z"/></svg>
+      Continue with Telegram
+    </button>
+
+    <p class="auth-alt">Already have an account? <a href="login.html">Log in</a></p>
+    <p class="auth-fine">By creating an account you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a>. CaseWatch is not affiliated with EOIR or any government agency.</p>
+  </div>
+</main>
+
+<script>
+  document.documentElement.classList.remove("nojs");
+  document.documentElement.classList.add("js");
+</script>
+</body>
+</html>

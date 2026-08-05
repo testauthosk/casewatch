@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en" class="nojs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>My cases — CaseWatch</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+
+<div class="appbar">
+  <div class="wrap nav">
+    <a href="index.html" class="brand">
+      <svg class="mk" viewBox="0 0 32 32"><path d="M16 2 27 6v9c0 7-5 12-11 15C10 27 5 22 5 15V6z" fill="#12A98D"/><path d="M11 16l3.5 3.5L21 12" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <b>Case<span>Watch</span></b>
+    </a>
+    <nav class="tabs">
+      <a href="app.html" class="on">My cases</a>
+      <a href="#alerts">Alerts</a>
+      <a href="#billing">Plan</a>
+    </nav>
+    <div class="me">
+      <span class="lang">EN ▾</span>
+      <div class="avatar">MR</div>
+    </div>
+  </div>
+</div>
+
+<main class="app">
+  <div class="wrap">
+
+    <div class="app-head">
+      <div>
+        <h1>My cases</h1>
+        <p>We re-check every monitored case around the clock and tell you the moment anything moves.</p>
+      </div>
+      <button type="button" class="btn btn-primary" onclick="document.getElementById('add').scrollIntoView({behavior:'smooth'})">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Add a case
+      </button>
+    </div>
+
+    <div class="plan-note">
+      <svg viewBox="0 0 24 24"><path d="M12 3 4 7v5c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V7z"/><path d="M9.5 12.5 11 14l3.5-3.5"/></svg>
+      <div>
+        <b>You're on the Free plan</b><br>
+        <span>One check a month, no alerts. Monitoring watches your case 24/7 and writes the second it changes.</span>
+      </div>
+      <a href="index.html#pricing" class="btn btn-navy">See plans</a>
+    </div>
+
+    <div class="cases">
+
+      <article class="case">
+        <div>
+          <div class="who">
+            <b>Maria Rodriguez</b>
+            <span class="badge badge-warn">Removal proceedings</span>
+          </div>
+          <div class="anum">A240-974-400 · Mexico</div>
+          <div class="meta">
+            <div>Next hearing<b class="num">May 14, 2026 · 9:00 AM</b></div>
+            <div>Court<b>Chicago, IL — Immigration Court</b></div>
+            <div>Judge decision<b>Pending</b></div>
+          </div>
+        </div>
+        <div class="side">
+          <span class="sw on"><i></i> Monitoring</span>
+          <span class="upd">Checked 2 min ago</span>
+        </div>
+      </article>
+
+      <article class="case">
+        <div>
+          <div class="who">
+            <b>Jose Ramirez</b>
+            <span class="badge badge-ok">Case closed</span>
+          </div>
+          <div class="anum">A215-330-118 · Guatemala</div>
+          <div class="meta">
+            <div>Next hearing<b>None scheduled</b></div>
+            <div>Court<b>Miami, FL — Immigration Court</b></div>
+            <div>Judge decision<b>Terminated</b></div>
+          </div>
+        </div>
+        <div class="side">
+          <span class="sw"><i></i> Monitoring off</span>
+          <span class="upd">Checked yesterday</span>
+        </div>
+      </article>
+
+      <article class="case">
+        <div>
+          <div class="who">
+            <b>Andrii Kovalenko</b>
+            <span class="badge badge-none">No case found</span>
+          </div>
+          <div class="anum">A251-887-002 · Ukraine</div>
+          <div class="meta">
+            <div>What this means<b>EOIR has no record for this A-number yet</b></div>
+            <div>We keep watching<b>Daily</b></div>
+          </div>
+        </div>
+        <div class="side">
+          <span class="sw on"><i></i> Monitoring</span>
+          <span class="upd">Checked 1 h ago</span>
+        </div>
+      </article>
+
+    </div>
+
+    <div class="grid2">
+      <div>
+        <div class="addcase" id="add">
+          <h3>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            Add another case
+          </h3>
+          <p class="hint">Enter the nine-digit A-Number exactly as it appears on the court notice.</p>
+          <div class="row">
+            <div class="field">
+              <label for="anum">A-Number</label>
+              <input id="anum" class="mono" placeholder="240-974-400" inputmode="numeric" maxlength="13">
+            </div>
+            <div class="field">
+              <label for="country">Country of citizenship</label>
+              <input id="country" placeholder="Mexico">
+            </div>
+            <button type="button" class="btn btn-primary">Check case</button>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:18px;" id="alerts">
+          <h3>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+            What happened recently
+          </h3>
+          <div class="tl">
+            <div class="it new">
+              <div class="dot"></div>
+              <div>
+                <div class="when">Today · 06:12</div>
+                <div class="what"><b>Maria Rodriguez</b> — hearing moved from Apr 2 to <b>May 14, 2026</b></div>
+              </div>
+            </div>
+            <div class="it">
+              <div class="dot"></div>
+              <div>
+                <div class="when">Mar 28 · 14:03</div>
+                <div class="what"><b>Jose Ramirez</b> — case terminated, monitoring paused</div>
+              </div>
+            </div>
+            <div class="it">
+              <div class="dot"></div>
+              <div>
+                <div class="when">Mar 21 · 09:40</div>
+                <div class="what"><b>Andrii Kovalenko</b> — added to monitoring, no record yet</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel">
+          <div class="tglink">
+            <div class="ic">
+              <svg viewBox="0 0 24 24"><path d="M21.9 4.3 18.7 19.4c-.24 1.07-.88 1.33-1.78.83l-4.92-3.63-2.37 2.28c-.26.26-.48.48-1 .48l.35-4.99 9.09-8.21c.4-.35-.09-.55-.61-.2L6.22 13.2 1.36 11.7c-1.06-.33-1.08-1.06.22-1.57l19-7.32c.88-.32 1.65.2 1.32 1.49z"/></svg>
+            </div>
+            <div>
+              <h3 style="display:block;">Get alerts in Telegram</h3>
+              <p class="hint" style="margin-top:3px;">Same account, same cases — just faster to read on the phone.</p>
+            </div>
+          </div>
+          <div class="code">CW-4823-19</div>
+          <p class="hint">Send this code to <b>@eoircasestatus_bot</b> and the two accounts become one.</p>
+          <a href="https://t.me/eoircasestatus_bot" class="btn btn-tg btn-block" style="margin-top:14px;">Open the bot</a>
+        </div>
+
+        <div class="panel" style="margin-top:18px;" id="billing">
+          <h3>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2"/><path d="M2.5 10h19"/></svg>
+            Your plan
+          </h3>
+          <p class="hint">Free — 1 check a month.<br>Used this month: <b>1 of 1</b>.</p>
+          <div class="code" style="letter-spacing:0; font-family:var(--sans); font-size:14px; text-align:left;">
+            Monitoring — <b>$9.99/mo</b> or <b>$75/year</b><br>
+            24/7 re-checks · instant alerts · unlimited cases
+          </div>
+          <a href="index.html#pricing" class="btn btn-primary btn-block" style="margin-top:14px;">Turn on monitoring</a>
+        </div>
+      </div>
+    </div>
+
+    <p class="auth-fine" style="margin-top:34px;">CaseWatch is an independent service and is not affiliated with, endorsed by, or connected to the U.S. Department of Justice, the Executive Office for Immigration Review (EOIR), or any government agency. Case information is sourced from the public EOIR automated case information system.</p>
+  </div>
+</main>
+
+<script>
+  document.documentElement.classList.remove("nojs");
+  document.documentElement.classList.add("js");
+  // макет: переключатель наблюдения отвечает на нажатие
+  document.querySelectorAll(".sw").forEach(function (s) {
+    s.addEventListener("click", function () {
+      s.classList.toggle("on");
+      s.lastChild.textContent = s.classList.contains("on") ? " Monitoring" : " Monitoring off";
+    });
+  });
+</script>
+</body>
+</html>
