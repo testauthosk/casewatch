@@ -82,6 +82,9 @@ function tooOften(key, limit, windowSec) {
 }
 
 async function issueCode(email, purpose) {
+  // у показательного аккаунта код постоянный — письма не шлём и лимит не жжём
+  const demoEmail = String(process.env.DEMO_EMAIL || '').toLowerCase();
+  if (demoEmail && process.env.DEMO_CODE && email === demoEmail) return { ok: true, delivered: false };
   if (q.recentCodes.get(email, now() - 3600).n >= 6) return { ok: false, error: 'too many codes' };
   const code = newCode();
   q.addCode.run(email, code, purpose, now() + 600, now());
