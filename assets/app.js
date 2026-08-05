@@ -52,22 +52,31 @@
   };
 
 
-  /* кнопки Google и Apple показываем только когда провайдер настроен —
-     мёртвая кнопка на странице входа хуже, чем её отсутствие */
+  /* Кнопки Google и Apple видны всегда. Пока ключи провайдера не прописаны,
+     кнопка не ведёт в тупик, а честно говорит, что вход ещё подключается. */
   CW.mountProviders = function () {
     return CW.api('/api/auth/providers').then(function (r) {
       var on = r.data || {};
-      [['google', on.google], ['apple', on.apple]].forEach(function (pair) {
-        var el = document.getElementById(pair[0]);
+      [['google', on.google, 'Google'], ['apple', on.apple, 'Apple']].forEach(function (p) {
+        var el = document.getElementById(p[0]);
         if (!el) return;
-        if (!pair[1]) { el.remove(); return; }
         el.style.display = '';
+        if (p[1]) {
+          el.addEventListener('click', function () { location.href = '/api/auth/' + p[0] + '/start'; });
+          return;
+        }
+        // провайдер ещё не подключён: кнопку показываем, но не ведём в тупик
+        el.classList.add('soon');
         el.addEventListener('click', function () {
-          location.href = '/api/auth/' + pair[0] + '/start';
+          var note = el.parentNode.querySelector('.soon-note');
+          if (!note) {
+            note = document.createElement('p');
+            note.className = 'hint soon-note';
+            el.parentNode.insertBefore(note, el.nextSibling);
+          }
+          note.textContent = p[2] + ' sign-in is being connected. Use your email for now.';
         });
       });
-      var sep = document.querySelector('.auth-sep');
-      if (sep && !document.querySelector('.btn-oauth, .btn-apple')) sep.remove();
     });
   };
 

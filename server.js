@@ -271,7 +271,7 @@ async function api(req, res, url) {
     const provider = backMatch[1];
     if (!oauth.enabled()[provider]) return send(res, 404, { ok: false, error: 'provider off' });
 
-    let code, state;
+    let code, state, appleUser = null;
     if (req.method === 'POST') {                       // Apple возвращает формой
       const raw = await new Promise((resolve) => {
         let d = ''; req.on('data', (c) => { d += c; if (d.length > 20000) req.destroy(); });
@@ -279,6 +279,7 @@ async function api(req, res, url) {
       });
       const f = new URLSearchParams(raw);
       code = f.get('code'); state = f.get('state');
+      appleUser = f.get('user');                       // имя приходит только в первый раз
     } else {
       const f = new URL(req.url, 'http://x').searchParams;
       code = f.get('code'); state = f.get('state');
@@ -287,20 +288,35 @@ async function api(req, res, url) {
       res.writeHead(302, { location: '/login.html?e=oauth' });
       return res.end();
     }
-    const r = await oauth.exchange(provider, code, req);
+    const r = await oauth.exchange(provider, code, req, { user: appleUser });
     if (!r.ok) {
       console.error('[oauth]', provider, r.error);
       res.writeHead(302, { location: '/login.html?e=oauth' });
       return res.end();
     }
-    let u = q.userByEmail.get(r.email);
+    /* Узнаём человека по sub провайдера, а не по почте: Google просит опираться
+       на sub, потому что почта меняется, а Apple со второго входа почту вообще
+       не присылает — по ней мы бы его просто не нашли. */
+    const known = q.identity.get(provider, r.sub);
+    let u = known ? q.userById.get(known.user_id) : null;
+
+    if (!u && r.email) u = q.userByEmail.get(r.email);
+
     if (!u) {
+      if (!r.email) {                       // нечего связывать: аккаунта нет, почты нет
+        res.writeHead(302, { location: '/login.html?e=oauth' });
+        return res.end();
+      }
       q.createUser.run(r.email, null, now());
       u = q.userByEmail.get(r.email);
       q.initPrefs.run(u.id);
-      q.upsertChannel.run(u.id, 'email', 1, r.email, 1);
+      // на скрытый relay-адрес Apple писать без настройки домена нельзя — канал не включаем
+      q.upsertChannel.run(u.id, 'email', r.private ? 0 : 1, r.email, 1);
       q.addEvent.run(u.id, null, 'note', 'Account created with ' + provider, now());
     }
+
+    q.linkIdentity.run(provider, r.sub, u.id, r.email || null, r.private ? 1 : 0, r.name || null, now(), now());
+    q.touchIdentity.run(now(), provider, r.sub);
     if (r.verified) q.markVerified.run(u.id);
     setSession(res, u.id, req.headers['user-agent']);
     res.writeHead(302, { location: '/app.html' });

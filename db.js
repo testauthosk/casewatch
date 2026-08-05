@@ -95,6 +95,24 @@ CREATE TABLE IF NOT EXISTS prefs (
   weekly   INTEGER NOT NULL DEFAULT 0
 );
 
+/* Внешние входы. Ключ — не почта, а постоянный идентификатор от провайдера:
+   Google прямо просит опираться на sub, потому что почту человек меняет, а
+   Apple почту присылает ТОЛЬКО при первом разрешении и потом не отдаёт вовсе.
+   Отсюда: sub в ключе, почта сохраняется один раз, скрытый relay-адрес
+   помечаем отдельно — на него нельзя писать без настройки домена у Apple. */
+CREATE TABLE IF NOT EXISTS identities (
+  provider      TEXT NOT NULL,             -- google | apple
+  subject       TEXT NOT NULL,             -- sub из id_token, у Apple он свой на команду
+  user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  email         TEXT,                      -- каким пришёл при первом входе
+  private_email INTEGER NOT NULL DEFAULT 0,-- Apple Hide My Email
+  name          TEXT,                      -- Apple отдаёт имя тоже только один раз
+  created_at    INTEGER NOT NULL,
+  last_login    INTEGER,
+  PRIMARY KEY (provider, subject)
+);
+CREATE INDEX IF NOT EXISTS idx_identities_user ON identities(user_id);
+
 CREATE TABLE IF NOT EXISTS support (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id    INTEGER REFERENCES users(id) ON DELETE SET NULL,
@@ -166,6 +184,18 @@ const q = {
   initPrefs: db.prepare('INSERT OR IGNORE INTO prefs (user_id) VALUES (?)'),
   setPrefs: db.prepare(
     'UPDATE prefs SET hearing = ?, decision = ?, appeared = ?, weekly = ? WHERE user_id = ?'),
+
+  identity: db.prepare('SELECT * FROM identities WHERE provider = ? AND subject = ?'),
+  linkIdentity: db.prepare(
+    `INSERT INTO identities (provider, subject, user_id, email, private_email, name, created_at, last_login)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(provider, subject) DO UPDATE SET last_login = excluded.last_login,
+       email = COALESCE(identities.email, excluded.email),
+       name = COALESCE(identities.name, excluded.name)`),
+  touchIdentity: db.prepare(
+    'UPDATE identities SET last_login = ? WHERE provider = ? AND subject = ?'),
+  identitiesOf: db.prepare(
+    'SELECT provider, email, private_email, created_at FROM identities WHERE user_id = ?'),
 
   addTicket: db.prepare(
     'INSERT INTO support (user_id, email, topic, text, delivered, created_at) VALUES (?, ?, ?, ?, ?, ?)'),

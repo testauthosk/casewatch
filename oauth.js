@@ -86,7 +86,7 @@ function startUrl(provider, req, secret) {
   return 'https://appleid.apple.com/auth/authorize?' + p;
 }
 
-async function exchange(provider, code, req) {
+async function exchange(provider, code, req, extra) {
   const redirect = base(req) + '/api/auth/' + provider + '/callback';
   const url = provider === 'google'
     ? 'https://oauth2.googleapis.com/token'
@@ -105,13 +105,29 @@ async function exchange(provider, code, req) {
   if (!r.ok || !j.id_token) {
     return { ok: false, error: (j && (j.error_description || j.error)) || 'token exchange failed' };
   }
+  // Токен пришёл прямо от провайдера по TLS в ответ на наш запрос с секретом,
+  // поэтому подпись отдельно не проверяем — так разрешает и Google, и Apple.
   const claims = decodeIdToken(j.id_token) || {};
-  const email = String(claims.email || '').toLowerCase();
-  if (!email) return { ok: false, error: 'provider gave no email' };
-  // Google отдаёт признак подтверждённой почты; Apple присылает только свои,
-  // уже подтверждённые адреса (в том числе скрытые relay-адреса).
+  const sub = String(claims.sub || '');
+  if (!sub) return { ok: false, error: 'provider gave no subject' };
+
+  // Почта необязательна: Apple отдаёт её только при первом разрешении,
+  // дальше приходит один sub — по нему человека и узнаём.
+  const email = String(claims.email || '').toLowerCase() || null;
   const verified = provider === 'apple' ? true : claims.email_verified !== false;
-  return { ok: true, email, verified };
+  const priv = claims.is_private_email === true || claims.is_private_email === 'true';
+
+  // Имя Apple присылает тоже один раз и не в токене, а формой на возврате
+  let name = null;
+  if (extra && extra.user) {
+    try {
+      const u = JSON.parse(extra.user);
+      const n = u && u.name;
+      if (n) name = [n.firstName, n.lastName].filter(Boolean).join(' ') || null;
+    } catch { /* прислали мусор — имя просто не сохраним */ }
+  }
+
+  return { ok: true, sub, email, verified, private: priv, name };
 }
 
 module.exports = { enabled, startUrl, exchange, makeState, stateOk };
