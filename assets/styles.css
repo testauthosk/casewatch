@@ -438,32 +438,91 @@ header.scrolled{ box-shadow:0 10px 34px -20px rgba(16,30,56,.5); background:rgba
 .btn-apple:hover{ background:#1a1a1a; box-shadow:0 3px 10px -4px rgba(0,0,0,.5); }
 .btn-apple svg{ width:18px; height:18px; margin-top:-2px; }
 .btn-oauth + .btn-apple, .btn-primary + .btn-oauth{ margin-top:10px; }
-/* ─── поле кода из письма ─── */
-.otp{ position:relative; }
-.otp input{ position:absolute; inset:0; width:100%; height:100%; opacity:0; z-index:2;
-  border:0; padding:0; font-size:16px; }          /* 16px — иначе iOS зумит страницу */
-.otp-cells{ display:grid; grid-template-columns:repeat(6,1fr); gap:8px; }
-.otp-cells span{ height:56px; display:grid; place-items:center; background:var(--surface2);
-  border:1.5px solid var(--line); border-radius:var(--r-sm);
-  font-family:var(--mono); font-size:24px; font-weight:500; color:var(--ink);
-  transition:border-color .18s var(--ease), background .18s var(--ease), box-shadow .18s var(--ease), transform .18s var(--ease); }
-.otp-cells span.filled{ background:#fff; border-color:var(--line2); }
-.otp-cells span.pop{ animation:otpPop .22s var(--ease); }
-@keyframes otpPop{ 0%{ transform:scale(.86); opacity:.4; } 100%{ transform:none; opacity:1; } }
-/* активная клетка светится и показывает мигающую черту вместо курсора */
-.otp.on .otp-cells span.now{ border-color:var(--acc); background:#fff; box-shadow:0 0 0 3px var(--acc-soft); }
-.otp.on .otp-cells span.now:empty::after{ content:""; width:2px; height:24px; background:var(--acc);
-  border-radius:2px; animation:otpCaret 1.05s steps(1,end) infinite; }
-@keyframes otpCaret{ 0%,50%{ opacity:1; } 51%,100%{ opacity:0; } }
-.otp.full .otp-cells span{ border-color:var(--acc); }
-.otp.bad .otp-cells{ animation:otpShake .38s var(--ease); }
-.otp.bad .otp-cells span{ border-color:#E5484D; }
-@keyframes otpShake{ 0%,100%{ transform:translateX(0);} 20%{ transform:translateX(-7px);} 40%{ transform:translateX(6px);} 60%{ transform:translateX(-4px);} 80%{ transform:translateX(2px);} }
-@media(max-width:380px){ .otp-cells{ gap:6px; } .otp-cells span{ height:50px; font-size:21px; } }
+/* конверт над шагом с кодом: открывается один раз, потом чуть покачивается */
+.mailer{ width:76px; margin:0 auto 14px; }
+.mailer svg{ width:100%; display:block; overflow:visible; animation:mailFloat 4.5s ease-in-out 1.1s infinite; }
+.mailer .body{ fill:var(--navy); }
+.mailer .paper{ fill:#fff; stroke:var(--line2); stroke-width:1.4;
+  transform-box:fill-box; transform-origin:bottom center;
+  animation:mailPaper .55s cubic-bezier(.2,.9,.25,1) .45s backwards; }
+.mailer .line{ stroke:var(--acc); stroke-width:2.6; stroke-linecap:round; fill:none;
+  animation:mailPaper .55s cubic-bezier(.2,.9,.25,1) .45s backwards; }
+.mailer .flap{ fill:none; stroke:#2A3C5F; stroke-width:3.2; stroke-linejoin:round;
+  transform-box:fill-box; transform-origin:top center;
+  animation:mailFlap .5s cubic-bezier(.4,0,.2,1) backwards; }
+@keyframes mailFlap{ from{ transform:scaleY(-1); } }
+/* код принят: письмо закрывается и на нём проявляется галочка */
+.mailer .stamp{ fill:none; stroke:#4FE0C4; stroke-width:4; stroke-linecap:round; stroke-linejoin:round;
+  stroke-dasharray:34; stroke-dashoffset:34; opacity:0; }
+.mailer.sealed svg{ animation:none; }
+.mailer.sealed .paper,.mailer.sealed .line{ opacity:0; transition:opacity .18s; }
+.mailer.sealed .flap{ animation:none; }
+.mailer.sealed .stamp{ opacity:1; stroke-dashoffset:0;
+  transition:stroke-dashoffset .45s .12s cubic-bezier(.4,0,.2,1), opacity .1s .12s; }
+@keyframes mailPaper{ from{ transform:translateY(16px) scaleY(.6); opacity:0; } }
+@keyframes mailFloat{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-4px); } }
 @media(prefers-reduced-motion:reduce){
-  .otp-cells span.pop{ animation:none; }
+  .mailer svg,.mailer .paper,.mailer .line,.mailer .flap{ animation:none; }
+}
+
+/* ─── поле кода из письма ─── */
+.otp{ position:relative; margin-bottom:26px; }
+.otp input{ position:absolute; inset:0 0 26px; width:100%; opacity:0; z-index:2;
+  border:0; padding:0; font-size:16px; }          /* 16px — иначе iOS зумит страницу */
+.otp-cells{ --h:60px; display:grid; grid-template-columns:repeat(6,1fr); gap:8px; }
+
+.otp-cells .cell{ position:relative; height:var(--h); overflow:hidden; background:var(--surface2);
+  border:1.5px solid var(--line); border-radius:var(--r-sm);
+  animation:otpIn .5s cubic-bezier(.2,.9,.25,1) backwards; animation-delay:calc(var(--i) * 55ms);
+  transition:border-color .18s var(--ease), background .18s var(--ease), box-shadow .18s var(--ease); }
+@keyframes otpIn{ from{ opacity:0; transform:translateY(14px) scale(.9); } }
+
+/* лента цифр: пустая ячейка сверху, дальше 0–9 — двигаем барабан по вертикали */
+.otp-cells .roll{ display:block; transform:translateY(calc(var(--d,0) * var(--h) * -1));
+  transition:transform .42s cubic-bezier(.22,1.15,.36,1); }
+.otp-cells .roll i{ display:block; height:var(--h); line-height:var(--h); text-align:center;
+  font-family:var(--mono); font-size:25px; font-weight:500; font-style:normal; color:var(--ink); }
+.otp-cells .cell.filled{ background:#fff; border-color:var(--line2); }
+
+/* активная клетка светится и показывает мигающую черту вместо курсора */
+.otp.on .cell.now{ border-color:var(--acc); background:#fff; box-shadow:0 0 0 3px var(--acc-soft); }
+.otp.on .cell.now::after{ content:""; position:absolute; left:50%; top:50%; width:2px; height:26px;
+  margin:-13px 0 0 -1px; background:var(--acc); border-radius:2px;
+  animation:otpCaret 1.05s steps(1,end) infinite; }
+.otp.on .cell.now.filled::after{ display:none; }
+@keyframes otpCaret{ 0%,50%{ opacity:1; } 51%,100%{ opacity:0; } }
+
+/* код набран — по клеткам слева направо проходит волна */
+.otp.full .cell{ border-color:var(--acc); }
+.otp.win .cell{ background:var(--acc); border-color:var(--acc);
+  transition-duration:.16s; transition-delay:calc(var(--i) * 60ms); }
+/* цвет цифры меняем чуть позже фона, иначе на миг белое по белому */
+.otp.win .roll i{ color:#fff; transition:color .14s calc(var(--i) * 60ms + 60ms); }
+
+.otp.bad .otp-cells{ animation:otpShake .38s var(--ease); }
+.otp.bad .cell{ border-color:#E5484D; background:#FFF5F5; }
+@keyframes otpShake{ 0%,100%{ transform:translateX(0);} 20%{ transform:translateX(-7px);} 40%{ transform:translateX(6px);} 60%{ transform:translateX(-4px);} 80%{ transform:translateX(2px);} }
+
+/* сколько код ещё жив: полоса тает, под ней время */
+.otp-life{ margin-top:10px; height:3px; border-radius:99px; background:var(--line); position:relative; }
+.otp-life i{ display:block; height:100%; border-radius:99px; background:var(--acc);
+  transform-origin:left; transition:transform 1s linear, background .3s; }
+.otp-life::after{ content:"code expires in " attr(data-left); position:absolute; right:0; top:8px;
+  font-size:11.5px; color:var(--muted); letter-spacing:.01em; }
+.otp-life.warn i{ background:#E5484D; }
+.otp-life.warn::after{ color:#E5484D; font-weight:600; }
+.otp.dead .cell{ opacity:.5; }
+.otp.dead .otp-life::after{ content:"the code has expired — send a new one"; }
+
+@media(max-width:380px){
+  .otp-cells{ --h:52px; gap:6px; }
+  .otp-cells .roll i{ font-size:21px; }
+}
+@media(prefers-reduced-motion:reduce){
+  .otp-cells .cell{ animation:none; }
+  .otp-cells .roll{ transition:none; }
   .otp.bad .otp-cells{ animation:none; }
-  .otp.on .otp-cells span.now:empty::after{ animation:none; }
+  .otp.on .cell.now::after{ animation:none; }
 }
 
 /* ─── пароль: полоса надёжности и список правил ─── */

@@ -190,12 +190,28 @@
     input.parentNode.insertBefore(wrap, input);
     wrap.appendChild(input);
 
+    /* Цифра не «появляется», а прокручивается на своё место барабаном: в каждой
+       клетке лежит лента из пустоты и цифр 0–9, двигаем её по вертикали. */
+    var strip = '<span class="roll"><i></i><i>0</i><i>1</i><i>2</i><i>3</i><i>4</i>'
+      + '<i>5</i><i>6</i><i>7</i><i>8</i><i>9</i></span>';
+
     var cells = document.createElement('div');
     cells.className = 'otp-cells';
     cells.setAttribute('aria-hidden', 'true');
-    for (var i = 0; i < LEN; i++) cells.appendChild(document.createElement('span'));
+    for (var i = 0; i < LEN; i++) {
+      var c = document.createElement('span');
+      c.className = 'cell';
+      c.style.setProperty('--i', i);          // задержки волной, слева направо
+      c.innerHTML = strip;
+      cells.appendChild(c);
+    }
     wrap.appendChild(cells);
     var slots = cells.children;
+
+    var line = document.createElement('div');
+    line.className = 'otp-life';
+    line.innerHTML = '<i></i>';
+    wrap.appendChild(line);
 
     input.setAttribute('inputmode', 'numeric');
     input.setAttribute('autocomplete', 'one-time-code');
@@ -205,14 +221,31 @@
       if (v !== input.value) input.value = v;               // буквы в код не попадают
       for (var i = 0; i < LEN; i++) {
         var s = slots[i];
-        var had = s.textContent;
-        s.textContent = v[i] || '';
-        if (v[i] && !had) { s.classList.remove('pop'); void s.offsetWidth; s.classList.add('pop'); }
+        var roll = s.firstChild;
+        roll.style.setProperty('--d', v[i] ? Number(v[i]) + 1 : 0);
         s.classList.toggle('filled', !!v[i]);
         s.classList.toggle('now', document.activeElement === input && i === Math.min(v.length, LEN - 1));
       }
       wrap.classList.toggle('full', v.length === LEN);
       if (v.length === LEN && onDone) onDone(v);
+    }
+
+    /* Код живёт десять минут — показываем это полосой, а не молчим до отказа */
+    var life = null;
+    function clock(seconds) {
+      if (life) clearInterval(life);
+      var left = seconds, total = seconds;
+      wrap.classList.remove('dead');
+      function tick() {
+        var bar = line.firstChild;
+        bar.style.transform = 'scaleX(' + Math.max(0, left / total) + ')';
+        line.dataset.left = Math.floor(left / 60) + ':' + ('0' + (left % 60)).slice(-2);
+        line.classList.toggle('warn', left <= 60);
+        if (left <= 0) { clearInterval(life); wrap.classList.add('dead'); }
+        left--;
+      }
+      tick();
+      life = setInterval(tick, 1000);
     }
 
     input.addEventListener('input', paint);
@@ -221,6 +254,13 @@
     paint();
 
     return {
+      start: function (seconds) { clock(seconds || 600); input.focus(); },
+      win: function () {
+        wrap.classList.add('win');
+        if (life) clearInterval(life);
+        var m = document.querySelector('.mailer');
+        if (m) m.classList.add('sealed');
+      },
       shake: function () {
         wrap.classList.remove('bad'); void wrap.offsetWidth; wrap.classList.add('bad');
         input.value = ''; paint(); input.focus();

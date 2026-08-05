@@ -65,6 +65,15 @@
     </div>
 
     <div id="step2" style="display:none;">
+      <div class="mailer" aria-hidden="true">
+        <svg viewBox="0 0 72 56">
+          <rect class="body" x="4" y="14" width="64" height="38" rx="7"/>
+          <rect class="paper" x="16" y="4" width="40" height="30" rx="4"/>
+          <path class="line" d="M23 14h26M23 21h18"/>
+          <path class="flap" d="M4 20 36 41 68 20"/>
+          <path class="stamp" d="M27 33.5 33.5 40 46 26"/>
+        </svg>
+      </div>
       <h1>Check your email</h1>
       <p class="sub">We sent a six-digit code to <b id="sentTo"></b>. It works for ten minutes.</p>
       <div class="field">
@@ -101,6 +110,7 @@
           if (r.status !== 200) return CW.err(err1, msg(r));
           document.getElementById("sentTo").textContent = email.value.trim();
           step1.style.display = "none"; step2.style.display = "block";
+          if (otp) otp.start(600);
           document.getElementById("code").focus();
         });
     });
@@ -118,15 +128,21 @@
       CW.api("/api/auth/2fa", { email: email.value.trim(), code: document.getElementById("code").value })
         .then(function (r) {
           if (r.status !== 200) { CW.pending(btn, false); if (otp) otp.shake(); return CW.err(err2, msg(r)); }
-          if (!carried) return location.replace("app.html");
-          CW.api("/api/cases", carried).then(function () { location.replace("app.html"); });
+          if (otp) otp.win();               // волна по клеткам, потом уводим в кабинет
+          setTimeout(function () {
+            if (!carried) return location.replace("app.html");
+            CW.api("/api/cases", carried).then(function () { location.replace("app.html"); });
+          }, 760);
         });
     });
 
     document.getElementById("again").addEventListener("click", function (e) {
       e.preventDefault();
       CW.api("/api/auth/resend", { email: email.value.trim(), purpose: "login" })
-        .then(function (r) { CW.err(err2, r.status === 200 ? "" : msg(r)); });
+        .then(function (r) {
+          CW.err(err2, r.status === 200 ? "" : msg(r));
+          if (r.status === 200 && otp) otp.start(600);   // новый код — новые десять минут
+        });
     });
 
     function msg(r) {
