@@ -368,3 +368,29 @@ header.scrolled{ box-shadow:0 10px 34px -20px rgba(16,30,56,.5); background:rgba
   border-radius:var(--r-sm); padding:11px 13px; margin-top:14px; }
 .auth-card .sum .an{ font-family:var(--mono); font-size:14px; letter-spacing:.04em; }
 .auth-card .sum .cn{ font-size:13px; color:var(--ink2); }
+
+/* ─────────── каналы уведомлений ─────────── */
+.chan{ display:grid; grid-template-columns:44px 1fr auto; gap:16px; align-items:center;
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:18px 20px; }
+.chan + .chan{ margin-top:12px; }
+.chan .ic{ width:44px; height:44px; border-radius:12px; display:grid; place-items:center; flex:none; }
+.chan .ic svg{ width:22px; height:22px; }
+.ic-tg{ background:#229ED9; } .ic-tg svg{ fill:#fff; }
+.ic-wa{ background:#25D366; } .ic-wa svg{ fill:#fff; }
+.ic-mail{ background:var(--navy); } .ic-mail svg{ stroke:#fff; fill:none; stroke-width:1.8; }
+.ic-sms{ background:var(--surface2); } .ic-sms svg{ stroke:var(--ink2); fill:none; stroke-width:1.8; }
+.chan b{ font-size:16px; display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+.chan .d{ font-size:13.5px; color:var(--ink2); margin-top:3px; }
+.chan .act{ display:flex; align-items:center; gap:12px; }
+.chan.locked{ background:var(--surface2); border-style:dashed; }
+.price-tag{ font-size:12.5px; font-weight:700; color:var(--acc-d); background:var(--acc-soft); padding:4px 9px; border-radius:99px; }
+
+.events{ margin-top:14px; display:grid; gap:2px; }
+.ev{ display:flex; align-items:flex-start; gap:12px; padding:12px 4px; border-top:1px solid var(--line); }
+.ev:first-child{ border-top:0; }
+.ev .txt b{ font-size:14.5px; } .ev .txt span{ display:block; font-size:13px; color:var(--ink2); margin-top:2px; }
+.ev .sw{ margin-left:auto; }
+.cbx{ width:20px; height:20px; border-radius:6px; border:1.5px solid var(--line2); flex:none; margin-top:2px;
+  display:grid; place-items:center; cursor:pointer; transition:.15s var(--ease); }
+.cbx svg{ width:13px; height:13px; stroke:#fff; fill:none; stroke-width:3; opacity:0; }
+.cbx.on{ background:var(--acc); border-color:var(--acc); } .cbx.on svg{ opacity:1; }
