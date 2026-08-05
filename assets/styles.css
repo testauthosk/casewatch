@@ -12,6 +12,41 @@
   --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
   --maxw:1160px; --pad:clamp(20px,4vw,40px);
 }
+/* Ночной режим. Меняем только значения переменных — вся вёрстка на них и
+   опирается, поэтому переключение обходится без перезагрузки страницы. */
+:root[data-theme="dark"]{
+  --bg:#0B1524; --surface:#132135; --surface2:#1A2B44;
+  --navy:#0A1322; --navy2:#16273E; --navy3:#26406B;
+  --ink:#E8EEF8; --ink2:#A9B7CE; --muted:#7F8FA8; --faint:#5C6C85;
+  --line:#22334D; --line2:#2E4260;
+  --acc:#1FC5A4; --acc-d:#3FD9BC; --acc-soft:rgba(31,197,164,.14); --on-acc:#06261F;
+  --on-navy:#E8EEF8; --on-navy-mut:#93A6C4; --navy-line:rgba(255,255,255,.14);
+}
+:root[data-theme="dark"] body{ color:var(--ink); }
+:root[data-theme="dark"] .btn-oauth{ background:var(--surface); color:var(--ink); border-color:var(--line2); }
+:root[data-theme="dark"] .btn-oauth:hover{ background:var(--surface2); }
+:root[data-theme="dark"] .btn-navy{ background:var(--surface2); }
+:root[data-theme="dark"] .btn-danger{ background:var(--surface); color:#FF8A8D; border-color:#5C2A2E; }
+:root[data-theme="dark"] .btn-danger:hover{ background:#2A1417; border-color:#8A3A3E; color:#FFA5A8; }
+:root[data-theme="dark"] .otp-cells .cell.filled,
+:root[data-theme="dark"] .otp.on .cell.now,
+:root[data-theme="dark"] .csel.open .cselbtn,
+:root[data-theme="dark"] .field input:focus,
+:root[data-theme="dark"] .field select:focus,
+:root[data-theme="dark"] .field textarea:focus{ background:var(--surface2); }
+:root[data-theme="dark"] .mailer .body{ fill:#0A1322; }
+:root[data-theme="dark"] .mailer .paper{ fill:var(--surface2); stroke:var(--line2); }
+/* шапка публичных страниц залита фиксированным светлым цветом — в тёмной теме
+   она бы осталась белой полосой */
+:root[data-theme="dark"] header{ background:rgba(11,21,36,.82); }
+:root[data-theme="dark"] .hero .bg img,
+:root[data-theme="dark"] .mock{ filter:brightness(.92); }
+:root[data-theme="dark"] .badge-off{ background:var(--surface2); color:var(--ink2); }
+:root[data-theme="dark"] .toast{ background:var(--surface2); color:var(--ink); }
+:root[data-theme="dark"] .modal{ background:rgba(4,10,20,.6); }
+:root[data-theme="dark"] img,
+:root[data-theme="dark"] .brand .mk{ filter:none; }
+
 *{ box-sizing:border-box; margin:0; padding:0; }
 html{ -webkit-text-size-adjust:100%; scroll-behavior:smooth; }
 body{ background:var(--bg); color:var(--ink); font-family:var(--sans); font-weight:400; line-height:1.6;
@@ -490,6 +525,31 @@ header.scrolled{ box-shadow:0 10px 34px -20px rgba(16,30,56,.5); background:rgba
 .lang-fab.is-open .lang-orb-puck{ opacity:1; }
 
 .drawer .pn .lang-fab{ margin-top:18px; align-self:flex-start; }
+
+/* кнопка ночного режима — тот же круг, что у языка */
+.theme-btn{ position:relative; width:36px; height:36px; flex:none; display:grid; place-items:center;
+  border-radius:50%; border:2px solid var(--line2); background:var(--navy); background-clip:padding-box;
+  color:#fff; cursor:pointer; box-shadow:0 8px 20px -8px rgba(16,30,56,.5);
+  transition:transform .24s cubic-bezier(.34,1.56,.64,1), border-color .18s, box-shadow .18s; }
+.theme-btn svg{ width:17px; height:17px; }
+.theme-btn:hover{ border-color:var(--acc); }
+.theme-btn:active{ transform:scale(.92); }
+.appbar .theme-btn{ background:rgba(255,255,255,.14); border-color:var(--navy-line); }
+.appbar .theme-btn:hover{ background:rgba(255,255,255,.22); }
+/* кольцо расходится от самой кнопки в момент нажатия */
+.theme-btn .ring{ position:absolute; inset:-2px; border-radius:50%; border:2px solid var(--acc);
+  opacity:0; pointer-events:none; }
+.theme-btn.hit .ring{ animation:themeRing .75s cubic-bezier(.2,.7,.2,1); }
+.theme-btn.hit svg{ animation:themeSpin .55s cubic-bezier(.34,1.4,.64,1); }
+@keyframes themeRing{ 0%{ opacity:.85; transform:scale(1); } 100%{ opacity:0; transform:scale(2.6); } }
+@keyframes themeSpin{ 0%{ transform:rotate(-70deg) scale(.5); opacity:0; } 100%{ transform:none; opacity:1; } }
+
+/* волна нового цвета, расходящаяся кругом на весь экран */
+.theme-wave{ position:fixed; inset:0; z-index:400; pointer-events:none; }
+
+@media(prefers-reduced-motion:reduce){
+  .theme-btn.hit .ring,.theme-btn.hit svg{ animation:none; }
+}
 
 /* короткое сообщение внизу экрана */
 .toast{ position:fixed; left:50%; bottom:26px; transform:translate(-50%,14px); z-index:200;
