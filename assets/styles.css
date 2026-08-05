@@ -55,7 +55,7 @@ header{ position:sticky; top:0; z-index:50; background:rgba(245,248,252,.82); ba
 .burger i{ width:18px; height:2px; background:var(--ink); display:block; }
 
 /* hero */
-.hero{ padding:clamp(44px,6vw,86px) 0 clamp(40px,5vw,72px); }
+.hero{ padding:clamp(30px,5vw,80px) 0 clamp(30px,4.4vw,68px); }
 .hero-grid{ display:grid; grid-template-columns:1.08fr .92fr; gap:56px; align-items:center; }
 .hero h1{ font-size:clamp(34px,4.6vw,54px); letter-spacing:-.03em; margin-top:20px; }
 .hero h1 .g{ color:var(--acc); }
@@ -114,24 +114,25 @@ header{ position:sticky; top:0; z-index:50; background:rgba(245,248,252,.82); ba
 
 /* trust bar */
 .trust{ border-top:1px solid var(--line); border-bottom:1px solid var(--line); background:var(--surface); }
-.trust .in{ display:flex; align-items:center; justify-content:space-between; gap:22px; padding:20px 0; flex-wrap:wrap; }
-.trust .t{ display:flex; align-items:center; gap:10px; font-size:13.5px; font-weight:600; color:var(--ink2); }
+.trust .in{ display:flex; align-items:center; justify-content:space-between; gap:22px; padding:20px var(--pad); flex-wrap:wrap; }
+.trust .t{ display:flex; align-items:center; gap:10px; font-size:13.5px; font-weight:600; color:var(--ink2); min-width:0; }
 .trust .t svg{ width:19px; height:19px; stroke:var(--acc); fill:none; stroke-width:1.8; flex:none; }
 
 /* section */
-section{ padding:clamp(56px,7vw,96px) 0; }
+section{ padding:clamp(40px,6.4vw,92px) 0; }
 .sh{ text-align:center; max-width:620px; margin:0 auto clamp(36px,4vw,54px); }
 .sh h2{ font-size:clamp(28px,3.6vw,42px); letter-spacing:-.03em; margin-top:12px; }
 .sh p{ color:var(--ink2); font-size:17px; margin-top:14px; }
 
 /* steps */
 .steps{ display:grid; grid-template-columns:repeat(3,1fr); gap:22px; }
-.step{ background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:28px; position:relative; }
-.step .n{ font-family:var(--mono); font-weight:700; font-size:13px; color:var(--acc); }
-.step .ic{ width:46px; height:46px; border-radius:12px; background:var(--acc-soft); display:grid; place-items:center; margin:14px 0 16px; }
+.step{ background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:24px; position:relative; }
+.step .n{ font-family:var(--mono); font-weight:700; font-size:13px; color:var(--acc); order:2; }
+.step .ic{ width:42px; height:42px; border-radius:11px; background:var(--acc-soft); display:grid; place-items:center; order:1; }
 .step .ic svg{ width:24px; height:24px; stroke:var(--acc); fill:none; stroke-width:1.8; }
+.step .top{ display:flex; align-items:center; gap:12px; margin-bottom:14px; }
 .step h3{ font-size:19px; }
-.step p{ color:var(--ink2); font-size:14.5px; margin-top:9px; }
+.step p{ color:var(--ink2); font-size:14.5px; margin-top:8px; }
 
 /* features bento */
 .feats{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
@@ -213,7 +214,7 @@ header.scrolled{ box-shadow:0 10px 34px -20px rgba(16,30,56,.5); background:rgba
 }
 
 /* drawer */
-.drawer{ position:fixed; inset:0; z-index:80; background:rgba(16,30,56,.4); opacity:0; pointer-events:none; transition:opacity .2s; }
+.drawer{ overflow:hidden; position:fixed; inset:0; z-index:80; background:rgba(16,30,56,.4); opacity:0; pointer-events:none; transition:opacity .2s; }
 .drawer.on{ opacity:1; pointer-events:auto; }
 .drawer .pn{ position:absolute; top:0; right:0; height:100%; width:min(84vw,320px); background:var(--surface); border-left:1px solid var(--line); transform:translateX(100%); transition:transform .28s var(--ease); padding:22px; display:flex; flex-direction:column; }
 .drawer.on .pn{ transform:none; }
@@ -397,3 +398,9 @@ header.scrolled{ box-shadow:0 10px 34px -20px rgba(16,30,56,.5); background:rgba
 
 .ferr{ display:none; margin-top:14px; padding:11px 13px; border-radius:var(--r-sm);
   background:#FBEBEB; border:1px solid #F0C9C5; color:#B3453D; font-size:13.5px; line-height:1.5; }
+
+@media(max-width:560px){
+  .steps{ gap:12px; } .step{ padding:20px; }
+  .trust .in{ gap:14px 16px; padding:16px var(--pad); }
+  .sh p{ margin-top:8px; }
+}
