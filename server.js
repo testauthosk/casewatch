@@ -44,6 +44,13 @@ function passOk(pass, stored) {
   return test.length === want.length && crypto.timingSafeEqual(test, want);
 }
 
+/* Те же правила, что показывает форма: проверка на клиенте — подсказка,
+   а не защита, отказать должен сервер. */
+function strongEnough(pass) {
+  const v = String(pass || '');
+  return v.length >= 8 && /[A-Z]/.test(v) && /\d/.test(v) && /[^A-Za-z0-9\s]/.test(v);
+}
+
 function newCode() {
   return String(crypto.randomInt(0, 1000000)).padStart(6, '0');
 }
@@ -193,7 +200,7 @@ async function api(req, res, url) {
     const email = clean(b.email);
     const pass = String(b.password || '');
     if (!email_ok(email)) return send(res, 400, { ok: false, error: 'bad email' });
-    if (pass.length < 8) return send(res, 400, { ok: false, error: 'password too short' });
+    if (!strongEnough(pass)) return send(res, 400, { ok: false, error: 'weak password' });
     if (tooOften('signup:' + ip, 10, 3600)) return send(res, 429, { ok: false, error: 'slow down' });
 
     const existing = q.userByEmail.get(email);

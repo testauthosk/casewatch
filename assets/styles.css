@@ -438,6 +438,50 @@ header.scrolled{ box-shadow:0 10px 34px -20px rgba(16,30,56,.5); background:rgba
 .btn-apple:hover{ background:#1a1a1a; box-shadow:0 3px 10px -4px rgba(0,0,0,.5); }
 .btn-apple svg{ width:18px; height:18px; margin-top:-2px; }
 .btn-oauth + .btn-apple, .btn-primary + .btn-oauth{ margin-top:10px; }
+/* ─── пароль: полоса надёжности и список правил ─── */
+.field.has-eye{ position:relative; }
+.field.has-eye input{ padding-right:44px; }
+.eye{ position:absolute; right:6px; bottom:6px; width:34px; height:34px; display:grid; place-items:center;
+  border:0; background:transparent; color:var(--muted); cursor:pointer; border-radius:8px; transition:color .15s, background .15s; }
+.eye:hover{ color:var(--ink2); background:var(--surface2); }
+.eye svg{ width:19px; height:19px; }
+.eye .slash{ stroke-dasharray:24; stroke-dashoffset:0; transition:stroke-dashoffset .22s var(--ease); }
+.eye.on .slash{ stroke-dashoffset:24; }          /* открыли пароль — перечёркивание уезжает */
+
+.pw{ margin-top:12px; }
+.pw-bar{ display:grid; grid-template-columns:repeat(4,1fr); gap:5px; }
+.pw-bar i{ height:5px; border-radius:99px; background:var(--line); position:relative; overflow:hidden; }
+.pw-bar i::after{ content:""; position:absolute; inset:0; border-radius:99px; background:var(--acc);
+  transform:scaleX(0); transform-origin:left; transition:transform .38s cubic-bezier(.22,1,.36,1), background-color .3s; }
+.pw-bar i.on::after{ transform:scaleX(1); }
+.pw[data-lvl="1"] .pw-bar i::after{ background:#E5484D; }
+.pw[data-lvl="2"] .pw-bar i::after{ background:#F5A524; }
+.pw[data-lvl="3"] .pw-bar i::after{ background:#3E9BFF; }
+.pw[data-lvl="4"] .pw-bar i::after{ background:var(--acc); }
+.pw-word{ font-size:12.5px; font-weight:700; color:var(--muted); margin-top:7px; transition:color .25s; }
+.pw[data-lvl="1"] .pw-word{ color:#E5484D; }
+.pw[data-lvl="2"] .pw-word{ color:#B4761A; }
+.pw[data-lvl="3"] .pw-word{ color:#2A7FD4; }
+.pw[data-lvl="4"] .pw-word{ color:var(--acc-d); }
+
+.pw-reqs{ list-style:none; margin:10px 0 0; display:grid; gap:6px; }
+.pw-reqs .req{ display:flex; align-items:center; gap:9px; font-size:13px; color:var(--muted);
+  transition:color .25s var(--ease); }
+.pw-reqs .dot{ width:17px; height:17px; border-radius:50%; border:1.6px solid var(--line2); flex:none;
+  display:grid; place-items:center; color:#fff; background:transparent;
+  transition:background .25s var(--ease), border-color .25s var(--ease), transform .25s var(--ease); }
+.pw-reqs .tk{ width:11px; height:11px; }
+.pw-reqs .tk path{ stroke-dasharray:24; stroke-dashoffset:24; transition:stroke-dashoffset .3s .05s var(--ease); }
+.pw-reqs .req.ok{ color:var(--ink2); }
+.pw-reqs .req.ok .dot{ background:var(--acc); border-color:var(--acc); transform:scale(1.08); }
+.pw-reqs .req.ok .tk path{ stroke-dashoffset:0; }
+
+.pw-match{ font-size:12.5px; font-weight:600; margin-top:8px; opacity:0; transform:translateY(-3px);
+  transition:opacity .2s var(--ease), transform .2s var(--ease); }
+.pw-match.show{ opacity:1; transform:none; }
+.pw-match.ok{ color:var(--acc-d); }
+.pw-match.bad{ color:#B4761A; }
+
 /* подпись под кнопкой, пока провайдер не подключён */
 .soon-note{ color:var(--ink2); font-size:12.5px; margin-top:8px; text-align:center; }
 

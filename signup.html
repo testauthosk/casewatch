@@ -45,8 +45,16 @@
       </div>
       <div class="field">
         <label for="pass">Password</label>
-        <input id="pass" type="password" placeholder="At least 8 characters" autocomplete="new-password">
+        <input id="pass" type="password" placeholder="Pick something only you know" autocomplete="new-password">
       </div>
+
+      <div id="pwbox"></div>
+
+      <div class="field" style="margin-top:14px;">
+        <label for="pass2">Repeat password</label>
+        <input id="pass2" type="password" placeholder="Type it once more" autocomplete="new-password">
+      </div>
+      <p class="pw-match" id="pwmatch"></p>
 
       <div class="ferr" id="err1"></div>
 
@@ -100,12 +108,23 @@
       document.getElementById("carry").style.display = "flex";
     }
     var email = document.getElementById("email");
+    var pw = CW.passwordUI(document.getElementById("pass"),
+                           document.getElementById("pass2"),
+                           document.getElementById("pwbox"));
     var step1 = document.getElementById("step1"), step2 = document.getElementById("step2");
     var err1 = document.getElementById("err1"), err2 = document.getElementById("err2");
 
     document.getElementById("btn1").addEventListener("click", function () {
       var btn = this;
       CW.err(err1, "");
+      // до сервера не идём, пока пароль не собран: отказ формы после ожидания раздражает
+      var weak = pw.first();
+      if (weak) {
+        weak.focus();
+        return CW.err(err1, weak.id === "pass2"
+          ? "The two passwords are different."
+          : "Finish the password — the checklist above shows what is missing.");
+      }
       CW.pending(btn, true, "Sending the code…");
       CW.api("/api/auth/signup", { email: email.value.trim(), password: document.getElementById("pass").value })
         .then(function (r) {
@@ -138,7 +157,7 @@
     function msg(r) {
       var e = (r.data && r.data.error) || "";
       if (e === "email in use") return "This email already has an account — log in instead.";
-      if (e === "password too short") return "Password needs at least 8 characters.";
+      if (e === "weak password") return "Password needs 8 characters, an uppercase letter, a number and a symbol.";
       if (e === "bad email") return "Check the email address.";
       if (e === "wrong code") return "That code doesn't match. Check the email again.";
       if (e === "code expired") return "The code expired — send a new one.";
