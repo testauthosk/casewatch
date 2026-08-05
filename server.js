@@ -170,6 +170,8 @@ function publicUser(u) {
   const prefs = q.prefs.get(u.id) || {};
   return {
     email: u.email, emailVerified: !!u.email_ok, plan: u.plan, smsAddon: !!u.sms_addon,
+    createdAt: u.created_at, hasPassword: !!u.pass_hash,
+    logins: q.identitiesOf.all(u.id).map((i) => ({ provider: i.provider, at: i.created_at })),
     telegram: u.tg_username || null, whatsapp: u.wa_phone || null,
     cases: cases.map((c) => ({
       id: c.id, aNumber: c.a_number, country: c.country, status: c.status,
@@ -342,6 +344,32 @@ async function api(req, res, url) {
   if (url === '/api/me' && req.method === 'GET') {
     if (!me) return send(res, 401, { ok: false, error: 'no session' });
     return send(res, 200, { ok: true, user: publicUser(me), support: SUPPORT });
+  }
+
+  /* Смена пароля: старый обязателен, иначе чужая открытая вкладка = чужой аккаунт.
+     Все прочие сессии после смены закрываем — это и есть смысл смены. */
+  if (url === '/api/account/password' && req.method === 'POST') {
+    if (!me) return send(res, 401, { ok: false, error: 'no session' });
+    const b = await readBody(req);
+    const cur = String((b && b.current) || '');
+    const next = String((b && b.next) || '');
+    if (tooOften('pass:' + ip, 10, 3600)) return send(res, 429, { ok: false, error: 'slow down' });
+    if (me.pass_hash && !passOk(cur, me.pass_hash)) {
+      return send(res, 403, { ok: false, error: 'wrong password' });
+    }
+    if (!strongEnough(next)) return send(res, 400, { ok: false, error: 'weak password' });
+    q.setPass.run(hash(next), me.id);
+    const keep = /(?:^|;\s*)cw=([a-f0-9]{64})\./.exec(req.headers.cookie || '');
+    q.dropOtherSessions.run(me.id, keep ? keep[1] : '');
+    q.addEvent.run(me.id, null, 'note', 'Password changed', now());
+    return send(res, 200, { ok: true });
+  }
+
+  if (url === '/api/account/sessions' && req.method === 'POST') {
+    if (!me) return send(res, 401, { ok: false, error: 'no session' });
+    const keep = /(?:^|;\s*)cw=([a-f0-9]{64})\./.exec(req.headers.cookie || '');
+    q.dropOtherSessions.run(me.id, keep ? keep[1] : '');
+    return send(res, 200, { ok: true });
   }
 
   if (url === '/api/support' && req.method === 'GET') {

@@ -158,6 +158,7 @@ const q = {
     'INSERT INTO sessions (token, user_id, created_at, expires_at, ua) VALUES (?, ?, ?, ?, ?)'),
   session: db.prepare('SELECT * FROM sessions WHERE token = ? AND expires_at > ?'),
   dropSession: db.prepare('DELETE FROM sessions WHERE token = ?'),
+  dropOtherSessions: db.prepare('DELETE FROM sessions WHERE user_id = ? AND token <> ?'),
 
   cases: db.prepare('SELECT * FROM cases WHERE user_id = ? ORDER BY created_at DESC'),
   caseByNumber: db.prepare('SELECT * FROM cases WHERE user_id = ? AND a_number = ?'),
