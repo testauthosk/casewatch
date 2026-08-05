@@ -409,6 +409,8 @@ header.scrolled{ box-shadow:0 10px 34px -20px rgba(16,30,56,.5); background:rgba
 .chan b{ font-size:16px; display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
 .chan .d{ font-size:13.5px; color:var(--ink2); margin-top:3px; }
 .chan .act{ display:flex; align-items:center; gap:12px; }
+/* кнопки в строках каналов одного размера — иначе колонка справа пляшет */
+.chan .act .btn{ width:148px; padding-left:0; padding-right:0; }
 .chan.locked{ background:var(--surface2); border-style:dashed; }
 .price-tag{ font-size:12.5px; font-weight:700; color:var(--acc-d); background:var(--acc-soft); padding:4px 9px; border-radius:99px; }
 
