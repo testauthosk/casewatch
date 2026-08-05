@@ -10,6 +10,7 @@ const crypto = require('crypto');
 
 const { db, q, now } = require('./db');
 const mail = require('./mail');
+const oauth = require('./oauth');
 
 const ROOT = __dirname;
 const PORT = process.env.PORT || 3000;
@@ -200,6 +201,61 @@ async function api(req, res, url) {
     if (tooOften('resend:' + ip, 6, 3600)) return send(res, 429, { ok: false, error: 'slow down' });
     const r = await issueCode(email, purpose);
     return send(res, r.ok ? 200 : 429, r);
+  }
+
+  if (url === '/api/auth/providers' && req.method === 'GET') {
+    return send(res, 200, { ok: true, ...oauth.enabled() });
+  }
+
+  // вход через Google или Apple: уводим к провайдеру
+  const startMatch = /^\/api\/auth\/(google|apple)\/start$/.exec(url);
+  if (startMatch && req.method === 'GET') {
+    const provider = startMatch[1];
+    if (!oauth.enabled()[provider]) return send(res, 404, { ok: false, error: 'provider off' });
+    res.writeHead(302, { location: oauth.startUrl(provider, req, SECRET), 'cache-control': 'no-store' });
+    return res.end();
+  }
+
+  // возврат от провайдера: меняем код на токен и заводим сессию
+  const backMatch = /^\/api\/auth\/(google|apple)\/callback$/.exec(url);
+  if (backMatch) {
+    const provider = backMatch[1];
+    if (!oauth.enabled()[provider]) return send(res, 404, { ok: false, error: 'provider off' });
+
+    let code, state;
+    if (req.method === 'POST') {                       // Apple возвращает формой
+      const raw = await new Promise((resolve) => {
+        let d = ''; req.on('data', (c) => { d += c; if (d.length > 20000) req.destroy(); });
+        req.on('end', () => resolve(d));
+      });
+      const f = new URLSearchParams(raw);
+      code = f.get('code'); state = f.get('state');
+    } else {
+      const f = new URL(req.url, 'http://x').searchParams;
+      code = f.get('code'); state = f.get('state');
+    }
+    if (!code || !oauth.stateOk(state, SECRET)) {
+      res.writeHead(302, { location: '/login.html?e=oauth' });
+      return res.end();
+    }
+    const r = await oauth.exchange(provider, code, req);
+    if (!r.ok) {
+      console.error('[oauth]', provider, r.error);
+      res.writeHead(302, { location: '/login.html?e=oauth' });
+      return res.end();
+    }
+    let u = q.userByEmail.get(r.email);
+    if (!u) {
+      q.createUser.run(r.email, null, now());
+      u = q.userByEmail.get(r.email);
+      q.initPrefs.run(u.id);
+      q.upsertChannel.run(u.id, 'email', 1, r.email, 1);
+      q.addEvent.run(u.id, null, 'note', 'Account created with ' + provider, now());
+    }
+    if (r.verified) q.markVerified.run(u.id);
+    setSession(res, u.id, req.headers['user-agent']);
+    res.writeHead(302, { location: '/app.html' });
+    return res.end();
   }
 
   if (url === '/api/auth/logout' && req.method === 'POST') {

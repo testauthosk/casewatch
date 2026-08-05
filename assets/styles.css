@@ -414,3 +414,12 @@ header.scrolled{ box-shadow:0 10px 34px -20px rgba(16,30,56,.5); background:rgba
   .hero{ padding-top:18px; }
   .hero .ey{ margin-bottom:2px; }
 }
+
+/* вход через провайдеров */
+.btn-oauth{ background:var(--surface); color:var(--ink); border:1px solid var(--line2); }
+.btn-oauth:hover{ background:var(--surface2); border-color:var(--ink2); }
+.btn-oauth svg{ width:19px; height:19px; }
+.btn-apple{ background:#000; color:#fff; }
+.btn-apple:hover{ background:#1a1a1a; }
+.btn-apple svg{ width:18px; height:18px; }
+.btn-oauth + .btn-apple, .btn-primary + .btn-oauth{ margin-top:10px; }

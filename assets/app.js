@@ -51,6 +51,26 @@
     return Math.floor(s / 86400) + ' d ago';
   };
 
+
+  /* кнопки Google и Apple показываем только когда провайдер настроен —
+     мёртвая кнопка на странице входа хуже, чем её отсутствие */
+  CW.mountProviders = function () {
+    return CW.api('/api/auth/providers').then(function (r) {
+      var on = r.data || {};
+      [['google', on.google], ['apple', on.apple]].forEach(function (pair) {
+        var el = document.getElementById(pair[0]);
+        if (!el) return;
+        if (!pair[1]) { el.remove(); return; }
+        el.style.display = '';
+        el.addEventListener('click', function () {
+          location.href = '/api/auth/' + pair[0] + '/start';
+        });
+      });
+      var sep = document.querySelector('.auth-sep');
+      if (sep && !document.querySelector('.btn-oauth, .btn-apple')) sep.remove();
+    });
+  };
+
   /* защищённые страницы: без входа отправляем на форму входа */
   CW.requireUser = function () {
     return CW.api('/api/me').then(function (r) {
