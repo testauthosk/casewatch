@@ -82,6 +82,10 @@ header{ position:sticky; top:0; z-index:50; background:rgba(245,248,252,.82); ba
 .csel.open .cselbtn .chev{ transform:rotate(180deg); }
 .cselopts{ position:absolute; left:0; right:0; top:calc(100% + 7px); z-index:30; background:var(--surface); border:1px solid var(--line); border-radius:var(--r-sm); box-shadow:0 22px 48px -20px rgba(16,30,56,.42); max-height:248px; overflow-y:auto; padding:5px; opacity:0; transform:translateY(-6px); pointer-events:none; transition:opacity .16s var(--ease), transform .16s var(--ease); }
 .csel.open .cselopts{ opacity:1; transform:none; pointer-events:auto; }
+/* если снизу мало места — список раскрывается вверх */
+.csel.up .cselopts{ top:auto; bottom:calc(100% + 7px); transform:translateY(6px); }
+.csel.up.open .cselopts{ transform:none; }
+.csel .cselbtn:focus-visible{ outline:none; border-color:var(--acc); box-shadow:0 0 0 3px var(--acc-soft); }
 .cselopts .o{ padding:10px 12px; border-radius:7px; cursor:pointer; font-size:14.5px; color:var(--ink); display:flex; align-items:center; justify-content:space-between; gap:10px; transition:background .12s, color .12s; }
 .cselopts .o:hover{ background:var(--acc-soft); color:var(--acc-d); }
 .cselopts .o.sel{ background:var(--acc-soft); color:var(--acc-d); font-weight:600; }

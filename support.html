@@ -143,6 +143,8 @@
       }).join("");
     }
 
+    CW.fancySelect(document.getElementById("supTopic"));
+
     CW.requireUser().then(function (user) {
       if (!user) return;
       var i = (user.email || "?").slice(0, 2).toUpperCase();
