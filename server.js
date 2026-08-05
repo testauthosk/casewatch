@@ -288,6 +288,24 @@ async function api(req, res, url) {
     return send(res, 200, { ok: true, user: publicUser(me) });
   }
 
+  // одно дело со своей историей — под страницу дела
+  const oneCase = /^\/api\/cases\/(\d+)$/.exec(url);
+  if (oneCase && req.method === 'GET') {
+    if (!me) return send(res, 401, { ok: false, error: 'no session' });
+    const c = q.caseById.get(Number(oneCase[1]), me.id);
+    if (!c) return send(res, 404, { ok: false, error: 'not found' });
+    return send(res, 200, { ok: true, case: {
+      id: c.id, aNumber: c.a_number, country: c.country, status: c.status,
+      name: c.name, court: c.court, hearingAt: c.hearing_at, decision: c.decision,
+      monitoring: !!c.monitoring, checkedAt: c.checked_at, createdAt: c.created_at,
+    }, events: q.caseEvents.all(c.id).map((e) => ({ kind: e.kind, text: e.text, at: e.created_at })) });
+  }
+  if (oneCase && req.method === 'DELETE') {
+    if (!me) return send(res, 401, { ok: false, error: 'no session' });
+    q.dropCase.run(Number(oneCase[1]), me.id);
+    return send(res, 200, { ok: true });
+  }
+
   if (url === '/api/cases/monitoring' && req.method === 'POST') {
     if (!me) return send(res, 401, { ok: false, error: 'no session' });
     const b = await readBody(req);
@@ -361,20 +379,30 @@ function seedDemo() {
   q.upsertChannel.run(u.id, 'email', 1, email, 1);
   if (q.countCases.get(u.id).n) return;
 
+  const day = 86400;
   const samples = [
-    ['240974400', 'Mexico', 'found', 'Maria Rodriguez', 'Chicago, IL — Immigration Court', 'May 14, 2026 · 9:00 AM', 'Pending'],
-    ['215330118', 'Guatemala', 'found', 'Jose Ramirez', 'Miami, FL — Immigration Court', null, 'Terminated'],
-    ['251887002', 'Ukraine', 'not_found', null, null, null, null],
+    ['240974400', 'Mexico', 'found', 'Maria Rodriguez', 'Chicago, IL — Immigration Court', 'May 14, 2026 · 9:00 AM', 'Pending', [
+      ['hearing', 'Hearing moved from March 2 to May 14, 2026 · 9:00 AM', 3600],
+      ['note', 'Court changed to Chicago, IL — Immigration Court', day * 12],
+      ['added', 'Case added to monitoring', day * 21],
+    ]],
+    ['215330118', 'Guatemala', 'found', 'Jose Ramirez', 'Miami, FL — Immigration Court', null, 'Terminated', [
+      ['decision', 'Judge decision: Terminated', day * 3],
+      ['appeared', 'Case appeared in the EOIR system', day * 15],
+      ['added', 'Case added to monitoring', day * 16],
+    ]],
+    ['251887002', 'Ukraine', 'not_found', null, null, null, null, [
+      ['added', 'Case added to monitoring — no record in EOIR yet', day * 9],
+    ]],
   ];
-  for (const [a, c, st, name, court, hearing, decision] of samples) {
+  for (const [a, c, st, name, court, hearing, decision, events] of samples) {
     q.addCase.run(u.id, a, c, now());
     const row = q.caseByNumber.get(u.id, a);
     db.prepare('UPDATE cases SET status=?, name=?, court=?, hearing_at=?, decision=?, checked_at=? WHERE id=?')
       .run(st, name, court, hearing, decision, now() - 600, row.id);
+    // события привязаны к делу, иначе на странице дела пустая история
+    for (const [kind, text, ago] of events) q.addEvent.run(u.id, row.id, kind, text, now() - ago);
   }
-  q.addEvent.run(u.id, null, 'hearing', 'Maria Rodriguez — hearing moved to May 14, 2026', now() - 3600);
-  q.addEvent.run(u.id, null, 'decision', 'Jose Ramirez — case terminated', now() - 86400 * 3);
-  q.addEvent.run(u.id, null, 'added', 'Andrii Kovalenko — added to monitoring, no record yet', now() - 86400 * 9);
   console.log('[demo] дела добавлены');
 }
 

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en" class="nojs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Case — CaseWatch</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<script defer src="assets/app.js"></script>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="wrap nav">
+    <a href="index.html" class="brand">
+      <svg class="mk" viewBox="0 0 32 32"><path d="M16 2 27 6v9c0 7-5 12-11 15C10 27 5 22 5 15V6z" fill="#12A98D"/><path d="M11 16l3.5 3.5L21 12" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <b>Case<span>Watch</span></b>
+    </a>
+    <div class="me">
+      <span class="lang">EN ▾</span>
+      <div class="avatar" id="ava">·</div>
+      <a href="#" id="out" class="login" style="font-size:14px;">Log out</a>
+    </div>
+  </div>
+</div>
+
+<div class="shell">
+  <aside class="side">
+    <div class="who">
+      <div class="avatar" id="ava2">·</div>
+      <div class="em" id="email">—</div>
+    </div>
+    <nav>
+      <a href="app.html" class="on">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        My cases
+      </a>
+      <a href="alerts.html">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+        Alerts
+      </a>
+      <a href="billing.html">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2"/><path d="M2.5 10h19"/></svg>
+        Plan &amp; billing
+      </a>
+    </nav>
+    <div class="foot">Questions? <a href="mailto:support@casewatch.app">support@casewatch.app</a></div>
+  </aside>
+
+  <main class="main">
+    <a href="app.html" class="back">
+      <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="m14 6-6 6 6 6"/></svg>
+      All cases
+    </a>
+
+    <div class="head">
+      <div>
+        <h1 id="title">Case</h1>
+        <p id="sub">—</p>
+      </div>
+      <span class="sw" id="mon"><i></i> <span id="monTxt">Monitoring</span></span>
+    </div>
+
+    <dl class="facts" id="facts"></dl>
+
+    <div class="panel" style="margin-top:18px;">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg>
+        History
+      </h3>
+      <div class="tl" id="tl"></div>
+    </div>
+
+    <div class="panel" style="margin-top:18px;">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 7h16M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>
+        Remove this case
+      </h3>
+      <p class="hint">We stop checking it and delete its history. This cannot be undone.</p>
+      <button type="button" class="btn btn-ghost" id="del" style="margin-top:12px;">Remove case</button>
+    </div>
+  </main>
+</div>
+
+<script>
+  document.documentElement.classList.remove("nojs");
+  document.documentElement.classList.add("js");
+
+  window.addEventListener("DOMContentLoaded", function () {
+    var id = Number(new URLSearchParams(location.search).get("id") || 0);
+    if (!id) return location.replace("app.html");
+
+    // даты человеческим языком: «Aug 2, 2026 · 2:33 PM», без секунд
+    function when(ts, withTime) {
+      var d = new Date(ts * 1000);
+      var day = d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      if (!withTime) return day;
+      return day + " · " + d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+    }
+
+    function fact(label, value, mono) {
+      return '<div><dt>' + label + '</dt><dd' + (mono ? ' class="mono"' : '') + '>' + (value || "—") + '</dd></div>';
+    }
+
+    function statusWord(s) {
+      if (s === "pending") return "Checking EOIR right now";
+      if (s === "found") return "Found in the EOIR system";
+      if (s === "not_found") return "No record in EOIR yet";
+      return "Last check failed";
+    }
+
+    CW.requireUser().then(function (user) {
+      if (!user) return;
+      var i = (user.email || "?").slice(0, 2).toUpperCase();
+      document.getElementById("ava").textContent = i;
+      document.getElementById("ava2").textContent = i;
+      document.getElementById("email").textContent = user.email;
+
+      CW.api("/api/cases/" + id).then(function (r) {
+        if (r.status !== 200) return location.replace("app.html");
+        var c = r.data.case, ev = r.data.events || [];
+
+        var badges = {
+          pending: '<span class="badge badge-off"><span class="spin"></span> Checking…</span>',
+          found: '<span class="badge badge-warn">' + (c.decision || "In proceedings") + '</span>',
+          not_found: '<span class="badge badge-none">No case found</span>'
+        };
+        document.getElementById("title").innerHTML =
+          (c.name || "Case " + CW.pretty(c.aNumber))
+          + ' ' + (badges[c.status] || '<span class="badge badge-off">Check failed</span>');
+        document.getElementById("sub").textContent = statusWord(c.status) + " · checked " + CW.ago(c.checkedAt);
+
+        document.getElementById("facts").innerHTML =
+            fact("A-Number", CW.pretty(c.aNumber), true)
+          + fact("Country of citizenship", c.country)
+          + fact("Next hearing", c.hearingAt || "None scheduled")
+          + fact("Immigration court", c.court)
+          + fact("Judge decision", c.decision)
+          + fact("Watching since", c.createdAt ? when(c.createdAt) : "—");
+
+        var sw = document.getElementById("mon");
+        sw.classList.toggle("on", c.monitoring);
+        document.getElementById("monTxt").textContent = c.monitoring ? "Monitoring" : "Monitoring off";
+        sw.addEventListener("click", function () {
+          var on = !sw.classList.contains("on");
+          sw.classList.toggle("on", on);
+          document.getElementById("monTxt").textContent = on ? "Monitoring" : "Monitoring off";
+          CW.api("/api/cases/monitoring", { id: c.id, on: on });
+        });
+
+        document.getElementById("tl").innerHTML = ev.length
+          ? ev.map(function (e, n) {
+              return '<div class="it' + (n === 0 ? " new" : "") + '"><div class="dot"></div><div>'
+                + '<div class="when">' + when(e.at, true) + '</div>'
+                + '<div class="what">' + e.text + '</div></div></div>';
+            }).join("")
+          : '<p class="hint">Nothing has changed since we started watching. That is good news.</p>';
+
+        document.getElementById("del").addEventListener("click", function () {
+          if (!confirm("Remove this case and its history?")) return;
+          fetch("/api/cases/" + c.id, { method: "DELETE", credentials: "same-origin" })
+            .then(function () { location.replace("app.html"); });
+        });
+      });
+    });
+
+    document.getElementById("out").addEventListener("click", function (e) {
+      e.preventDefault();
+      CW.api("/api/auth/logout", {}).then(function () { location.replace("login.html"); });
+    });
+  });
+</script>
+</body>
+</html>

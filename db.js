@@ -137,6 +137,9 @@ const q = {
     'INSERT INTO cases (user_id, a_number, country, created_at) VALUES (?, ?, ?, ?)'),
   setMonitoring: db.prepare('UPDATE cases SET monitoring = ? WHERE id = ? AND user_id = ?'),
   countCases: db.prepare('SELECT COUNT(*) AS n FROM cases WHERE user_id = ?'),
+  caseById: db.prepare('SELECT * FROM cases WHERE id = ? AND user_id = ?'),
+  caseEvents: db.prepare('SELECT * FROM events WHERE case_id = ? ORDER BY created_at DESC, id DESC LIMIT 30'),
+  dropCase: db.prepare('DELETE FROM cases WHERE id = ? AND user_id = ?'),
 
   addEvent: db.prepare(
     'INSERT INTO events (user_id, case_id, kind, text, created_at) VALUES (?, ?, ?, ?, ?)'),

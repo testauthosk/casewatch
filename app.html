@@ -116,7 +116,9 @@
     }
 
     function col(label, value) {
-      return '<div><div class="c-k">' + label + '</div><div class="c-v">' + (value || "—") + '</div></div>';
+      // пустую колонку на телефоне прячем — иначе карточка набита прочерками
+      return '<div' + (value ? '' : ' class="c-empty"') + '><div class="c-k">' + label
+        + '</div><div class="c-v">' + (value || "—") + '</div></div>';
     }
 
     function render(user) {
@@ -151,14 +153,23 @@
           + '<div class="an">' + CW.pretty(c.aNumber) + ' · ' + c.country + '</div></div>'
           + cols
           + '<div class="end"><span class="sw' + (c.monitoring ? " on" : "") + '"><i></i></span>'
-          + '<span class="upd">Checked ' + CW.ago(c.checkedAt) + '</span></div></article>';
+          + '<span class="upd">Checked ' + CW.ago(c.checkedAt) + '</span></div>'
+          + '<svg class="go" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="m10 6 6 6-6 6"/></svg>'
+          + '</article>';
       }).join("");
 
       box.querySelectorAll(".sw").forEach(function (sw) {
-        sw.addEventListener("click", function () {
+        sw.addEventListener("click", function (e) {
+          e.stopPropagation();          // переключатель не должен открывать дело
           var on = !sw.classList.contains("on");
           sw.classList.toggle("on", on);
           CW.api("/api/cases/monitoring", { id: Number(sw.closest(".row-case").dataset.id), on: on });
+        });
+      });
+
+      box.querySelectorAll(".row-case").forEach(function (row) {
+        row.addEventListener("click", function () {
+          location.href = "case.html?id=" + row.dataset.id;
         });
       });
     }
