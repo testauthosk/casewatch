@@ -21,7 +21,7 @@
     </a>
     <div class="me">
       <span class="lang">EN ▾</span>
-      <a href="#" id="out" class="login" style="font-size:14px;">Log out</a>
+      <a href="#" id="out" class="login">Log out</a>
     </div>
   </div>
 </div>
@@ -71,7 +71,7 @@
         <div class="d">maria.rodriguez@gmail.com — verified</div>
       </div>
       <div class="act">
-        <span class="sw on"><i></i></span>
+        <button type="button" class="btn btn-danger" data-off="email">Disconnect</button>
       </div>
     </div>
 
@@ -84,7 +84,7 @@
         <div class="d">@maria_r — the bot writes here, everything else stays on the site</div>
       </div>
       <div class="act">
-        <span class="sw on"><i></i></span>
+        <button type="button" class="btn btn-danger" data-off="telegram">Disconnect</button>
       </div>
     </div>
 
@@ -174,8 +174,26 @@
 <script>
   document.documentElement.classList.remove("nojs");
   document.documentElement.classList.add("js");
-  document.querySelectorAll(".sw").forEach(function (s) {
-    s.addEventListener("click", function () { s.classList.toggle("on"); });
+  // отключение канала: подтверждаем, потом гасим строку — без молчаливых переключателей
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-off]");
+    if (!b) return;
+    var kind = b.dataset.off;
+    var row = b.closest(".chan");
+    if (b.dataset.state === "off") {                 // включаем обратно
+      CW.api("/api/channels", { kind: kind, enabled: true }).then(function () {
+        row.classList.remove("gone");
+        row.querySelector(".badge").outerHTML = '<span class="badge badge-ok">Connected</span>';
+        b.textContent = "Disconnect"; b.className = "btn btn-danger"; delete b.dataset.state;
+      });
+      return;
+    }
+    if (!confirm("Stop sending alerts to " + kind + "?")) return;
+    CW.api("/api/channels", { kind: kind, enabled: false }).then(function () {
+      row.classList.add("gone");
+      row.querySelector(".badge").outerHTML = '<span class="badge badge-off">Off</span>';
+      b.textContent = "Turn back on"; b.className = "btn btn-ghost"; b.dataset.state = "off";
+    });
   });
   window.addEventListener("DOMContentLoaded", function () {
     CW.requireUser().then(function (user) {
