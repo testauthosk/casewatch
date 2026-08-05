@@ -127,7 +127,7 @@ section{ padding:clamp(40px,6.4vw,92px) 0; }
 /* steps */
 .steps{ display:grid; grid-template-columns:repeat(3,1fr); gap:22px; }
 .step{ background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:24px; position:relative; }
-.step .n{ font-family:var(--mono); font-weight:700; font-size:13px; color:var(--acc); order:2; }
+.step .n{ font-family:var(--mono); font-weight:700; font-size:26px; line-height:1; color:var(--acc); order:2; letter-spacing:-.02em; }
 .step .ic{ width:42px; height:42px; border-radius:11px; background:var(--acc-soft); display:grid; place-items:center; order:1; }
 .step .ic svg{ width:24px; height:24px; stroke:var(--acc); fill:none; stroke-width:1.8; }
 .step .top{ display:flex; align-items:center; gap:12px; margin-bottom:14px; }
@@ -400,7 +400,13 @@ header.scrolled{ box-shadow:0 10px 34px -20px rgba(16,30,56,.5); background:rgba
   background:#FBEBEB; border:1px solid #F0C9C5; color:#B3453D; font-size:13.5px; line-height:1.5; }
 
 @media(max-width:560px){
-  .steps{ gap:12px; } .step{ padding:20px; }
+  .steps{ gap:16px; } .step{ padding:20px; }
   .trust .in{ gap:14px 16px; padding:16px var(--pad); }
   .sh p{ margin-top:8px; }
+}
+
+@media(max-width:700px){
+  /* на телефоне шапка уже отделяет герой — большой отступ сверху не нужен */
+  .hero{ padding-top:18px; }
+  .hero .ey{ margin-bottom:2px; }
 }

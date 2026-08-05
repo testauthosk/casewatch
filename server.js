@@ -8,7 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const { q, now } = require('./db');
+const { db, q, now } = require('./db');
 const mail = require('./mail');
 
 const ROOT = __dirname;
@@ -91,6 +91,14 @@ async function issueCode(email, purpose) {
 }
 
 function checkCode(email, purpose, code) {
+  // Показательный аккаунт: пока почта не подключена, письма с кодом не уходят,
+  // и войти было бы нельзя. Для одного адреса из настроек принимаем
+  // фиксированный код — снимается удалением переменных окружения.
+  const demoEmail = String(process.env.DEMO_EMAIL || '').toLowerCase();
+  const demoCode = String(process.env.DEMO_CODE || '');
+  if (demoEmail && demoCode && email === demoEmail && String(code).trim() === demoCode) {
+    return { ok: true };
+  }
   const row = q.liveCode.get(email, purpose, now());
   if (!row) return { ok: false, error: 'code expired' };
   if (row.tries >= 5) return { ok: false, error: 'too many attempts' };
@@ -281,6 +289,39 @@ function serveStatic(req, res) {
   });
 }
 
+/* Показательный аккаунт с парой дел — чтобы было что посмотреть внутри. */
+function seedDemo() {
+  const email = String(process.env.DEMO_EMAIL || '').toLowerCase();
+  const pass = process.env.DEMO_PASS;
+  if (!email || !pass) return;
+  let u = q.userByEmail.get(email);
+  if (!u) {
+    q.createUser.run(email, hash(pass), now());
+    u = q.userByEmail.get(email);
+    console.log('[demo] аккаунт создан:', email);
+  }
+  q.markVerified.run(u.id);
+  q.initPrefs.run(u.id);
+  q.upsertChannel.run(u.id, 'email', 1, email, 1);
+  if (q.countCases.get(u.id).n) return;
+
+  const samples = [
+    ['240974400', 'Mexico', 'found', 'Maria Rodriguez', 'Chicago, IL — Immigration Court', 'May 14, 2026 · 9:00 AM', 'Pending'],
+    ['215330118', 'Guatemala', 'found', 'Jose Ramirez', 'Miami, FL — Immigration Court', null, 'Terminated'],
+    ['251887002', 'Ukraine', 'not_found', null, null, null, null],
+  ];
+  for (const [a, c, st, name, court, hearing, decision] of samples) {
+    q.addCase.run(u.id, a, c, now());
+    const row = q.caseByNumber.get(u.id, a);
+    db.prepare('UPDATE cases SET status=?, name=?, court=?, hearing_at=?, decision=?, checked_at=? WHERE id=?')
+      .run(st, name, court, hearing, decision, now() - 600, row.id);
+  }
+  q.addEvent.run(u.id, null, 'hearing', 'Maria Rodriguez — hearing moved to May 14, 2026', now() - 3600);
+  q.addEvent.run(u.id, null, 'decision', 'Jose Ramirez — case terminated', now() - 86400 * 3);
+  q.addEvent.run(u.id, null, 'added', 'Andrii Kovalenko — added to monitoring, no record yet', now() - 86400 * 9);
+  console.log('[demo] дела добавлены');
+}
+
 http.createServer((req, res) => {
   const url = req.url.split('?')[0];
   if (url === '/healthz') {
@@ -295,5 +336,6 @@ http.createServer((req, res) => {
   if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, 'method not allowed', 'text/plain');
   serveStatic(req, res);
 }).listen(PORT, () => {
+  try { seedDemo(); } catch (e) { console.error('[demo]', e.message); }
   console.log('CaseWatch on :' + PORT, '| почта:', mail.hasKey() ? 'Resend подключён' : 'ключа нет, коды в логе');
 });

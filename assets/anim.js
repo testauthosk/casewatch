@@ -55,8 +55,13 @@
     headerFallback();
   }
 
-  /* ---- initial hidden states ---- */
-  G.set(".rv", { opacity: 0, y: 24 });
+  /* ---- initial hidden states ----
+     На узком экране карточки идут в один столбец с небольшим зазором, и сдвиг
+     по вертикали при появлении накладывал их друг на друга — выглядело как
+     поломка. На телефоне проявляем только прозрачностью, без съезда. */
+  var NARROW = window.matchMedia("(max-width:700px)").matches;
+  var RISE = NARROW ? 0 : 24;
+  G.set(".rv", { opacity: 0, y: RISE });
   G.set(".hero .mock", { y: 0, x: 46 });     // the status card glides in from the right
 
   /* ---- hero entrance ----
