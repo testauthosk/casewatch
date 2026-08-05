@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en" class="nojs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Support — CaseWatch</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<script defer src="assets/app.js"></script>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="wrap nav">
+    <a href="index.html" class="brand">
+      <svg class="mk" viewBox="0 0 32 32"><path d="M16 2 27 6v9c0 7-5 12-11 15C10 27 5 22 5 15V6z" fill="#12A98D"/><path d="M11 16l3.5 3.5L21 12" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <b>Case<span>Watch</span></b>
+    </a>
+    <div class="me">
+      <span class="lang">EN ▾</span>
+      <div class="avatar" id="ava">·</div>
+      <a href="#" id="out" class="login" style="font-size:14px;">Log out</a>
+    </div>
+  </div>
+</div>
+
+<div class="shell">
+  <aside class="side">
+    <div class="who">
+      <div class="avatar" id="ava2">·</div>
+      <div class="em" id="email">—</div>
+    </div>
+    <nav>
+      <a href="app.html">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        My cases
+      </a>
+      <a href="alerts.html">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+        Alerts
+      </a>
+      <a href="billing.html">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2"/><path d="M2.5 10h19"/></svg>
+        Plan &amp; billing
+      </a>
+    </nav>
+    <a href="support.html" class="sup on" id="supBtn">
+      <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .9-1 1.6v.3"/><path d="M12 17h.01"/></svg>
+      Support
+    </a>
+  </aside>
+
+  <main class="main">
+    <div class="head">
+      <div>
+        <h1>Support</h1>
+        <p>Tell us what happened — we read every message and answer within a business day.</p>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel" id="formPanel">
+        <h3>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-2.9-.5L4 21l1.6-4.1A8.4 8.4 0 0 1 12 3.5a8.4 8.4 0 0 1 9 8z"/></svg>
+          Write to us
+        </h3>
+
+        <div class="field" style="margin-top:16px;">
+          <label for="supTopic">What is it about</label>
+          <select id="supTopic">
+            <option>Case or hearing data</option>
+            <option>Alerts and channels</option>
+            <option>Payment or plan</option>
+            <option>Account and sign-in</option>
+            <option>Something else</option>
+          </select>
+        </div>
+
+        <div class="field" style="margin-top:12px;">
+          <label for="supText">Your message</label>
+          <textarea id="supText" rows="7" placeholder="Describe it in a few sentences — the A-Number helps if it is about a case."></textarea>
+        </div>
+
+        <div class="ferr" id="supErr"></div>
+        <p class="hint" style="margin-top:10px;">We reply to <b id="supMail">your email</b>.</p>
+        <button type="button" class="btn btn-primary btn-block" id="supSend" style="margin-top:12px;">Send message</button>
+      </div>
+
+      <div class="panel">
+        <h3>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.5 13.5H11L10 22l8.5-11.5H12z"/></svg>
+          Faster ways to reach us
+        </h3>
+        <p class="hint">Telegram is the quickest — the same place the bot writes from. Email works too, we read both.</p>
+
+        <a class="btn btn-tg btn-block" id="supTg" href="#" target="_blank" rel="noopener" style="margin-top:16px;">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.9 4.3 18.7 19.4c-.24 1.07-.88 1.33-1.78.83l-4.92-3.63-2.37 2.28c-.26.26-.48.48-1 .48l.35-4.99 9.09-8.21c.4-.35-.09-.55-.61-.2L6.22 13.2 1.36 11.7c-1.06-.33-1.08-1.06.22-1.57l19-7.32c.88-.32 1.65.2 1.32 1.49z"/></svg>
+          Write to support in Telegram
+        </a>
+        <a class="btn btn-ghost btn-block" id="supMailBtn" href="#" style="margin-top:10px;">Email us</a>
+
+        <p class="hint" style="margin-top:16px;">
+          Cases, plan and payment are all managed here on the site. If a case looks wrong in EOIR itself, we can only show what the court publishes — but tell us anyway, we will check the record with you.
+        </p>
+      </div>
+    </div>
+
+    <div class="panel" id="history" hidden style="margin-top:18px;">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg>
+        Your messages
+      </h3>
+      <div class="tl" id="tl"></div>
+    </div>
+
+    <p class="auth-fine" style="margin-top:34px;">CaseWatch is an independent service and is not affiliated with, endorsed by, or connected to the U.S. Department of Justice, the Executive Office for Immigration Review (EOIR), or any government agency.</p>
+  </main>
+</div>
+
+<script>
+  document.documentElement.classList.remove("nojs");
+  document.documentElement.classList.add("js");
+
+  window.addEventListener("DOMContentLoaded", function () {
+    function when(ts) {
+      var d = new Date(ts * 1000);
+      return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+        + " · " + d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+    }
+
+    function drawHistory(list) {
+      var box = document.getElementById("history");
+      if (!list.length) { box.hidden = true; return; }
+      box.hidden = false;
+      document.getElementById("tl").innerHTML = list.map(function (t, n) {
+        return '<div class="it' + (n === 0 ? " new" : "") + '"><div class="dot"></div><div>'
+          + '<div class="when">' + when(t.at) + (t.topic ? " · " + t.topic : "") + '</div>'
+          + '<div class="what">' + t.text.replace(/[<>&]/g, function (c) {
+              return { "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c];
+            }) + '</div></div></div>';
+      }).join("");
+    }
+
+    CW.requireUser().then(function (user) {
+      if (!user) return;
+      var i = (user.email || "?").slice(0, 2).toUpperCase();
+      document.getElementById("ava").textContent = i;
+      document.getElementById("ava2").textContent = i;
+      document.getElementById("email").textContent = user.email;
+      document.getElementById("supMail").textContent = user.email;
+
+      CW.api("/api/support").then(function (r) {
+        if (r.status !== 200) return;
+        var s = r.data.support || {};
+        var tg = document.getElementById("supTg");
+        if (s.tg) tg.href = s.tg; else tg.remove();
+        var m = document.getElementById("supMailBtn");
+        if (s.email) { m.href = "mailto:" + s.email; m.textContent = "Email " + s.email; }
+        else m.remove();
+        drawHistory(r.data.tickets || []);
+      });
+    });
+
+    document.getElementById("supSend").addEventListener("click", function () {
+      var btn = this, err = document.getElementById("supErr");
+      var text = document.getElementById("supText").value.trim();
+      CW.err(err, "");
+      if (text.length < 5) return CW.err(err, "Write a couple of sentences so we can help.");
+      CW.pending(btn, true, "Sending…");
+      CW.api("/api/support", { topic: document.getElementById("supTopic").value, text: text })
+        .then(function (r) {
+          CW.pending(btn, false);
+          if (r.status === 429) return CW.err(err, "You have sent several messages already — we are on it.");
+          if (r.status !== 200) return CW.err(err, "Could not send it. Try Telegram or email on the right.");
+          document.getElementById("formPanel").innerHTML =
+            '<h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5 11 15l4.5-5"/></svg> Message sent</h3>'
+            + '<p class="hint">We have it and will reply to <b>' + document.getElementById("supMail").textContent + '</b>.</p>'
+            + '<button type="button" class="btn btn-ghost btn-block" id="supAgain" style="margin-top:16px;">Write another message</button>';
+          document.getElementById("supAgain").addEventListener("click", function () { location.reload(); });
+        });
+    });
+
+    document.getElementById("out").addEventListener("click", function (e) {
+      e.preventDefault();
+      CW.api("/api/auth/logout", {}).then(function () { location.replace("login.html"); });
+    });
+  });
+</script>
+</body>
+</html>

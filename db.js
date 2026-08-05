@@ -170,6 +170,8 @@ const q = {
   addTicket: db.prepare(
     'INSERT INTO support (user_id, email, topic, text, delivered, created_at) VALUES (?, ?, ?, ?, ?, ?)'),
   markTicket: db.prepare('UPDATE support SET delivered = 1 WHERE id = ?'),
+  myTickets: db.prepare(
+    'SELECT id, topic, text, delivered, created_at FROM support WHERE user_id = ? ORDER BY id DESC LIMIT 10'),
   recentTickets: db.prepare(
     'SELECT COUNT(*) AS n FROM support WHERE user_id = ? AND created_at > ?'),
 

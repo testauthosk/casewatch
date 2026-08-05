@@ -321,6 +321,14 @@ async function api(req, res, url) {
     return send(res, 200, { ok: true, user: publicUser(me), support: SUPPORT });
   }
 
+  if (url === '/api/support' && req.method === 'GET') {
+    if (!me) return send(res, 401, { ok: false, error: 'no session' });
+    const list = q.myTickets.all(me.id).map((t) => ({
+      id: t.id, topic: t.topic, text: t.text, at: t.created_at, delivered: !!t.delivered,
+    }));
+    return send(res, 200, { ok: true, tickets: list, support: SUPPORT });
+  }
+
   if (url === '/api/support' && req.method === 'POST') {
     if (!me) return send(res, 401, { ok: false, error: 'no session' });
     const b = await readBody(req);
