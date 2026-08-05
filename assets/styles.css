@@ -437,7 +437,9 @@ header.scrolled{ box-shadow:0 10px 34px -20px rgba(16,30,56,.5); background:rgba
 /* ─────────── каркас кабинета: слева навигация, справа содержимое ─────────── */
 .shell{ display:grid; grid-template-columns:242px minmax(0,1fr); min-height:calc(100vh - 68px);
   max-width:1440px; margin:0 auto; }
-.side{ border-right:1px solid var(--line); background:var(--surface); padding:22px 16px 24px; position:sticky;
+/* 64px снизу — запас на панель задач и прочее, что перекрывает низ окна:
+   у нижнего края кнопку срезает */
+.side{ border-right:1px solid var(--line); background:var(--surface); padding:22px 16px 64px; position:sticky;
   top:69px; height:calc(100vh - 69px); overflow-y:auto;
   display:flex; flex-direction:column; }   /* 69 = шапка вместе с её линией, иначе колонка на пиксель выше экрана */
 .side .who{ display:flex; align-items:center; gap:11px; padding:0 8px 16px; border-bottom:1px solid var(--line); margin-bottom:14px; }
