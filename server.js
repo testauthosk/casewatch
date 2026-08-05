@@ -81,6 +81,8 @@ function tooOften(key, limit, windowSec) {
   return arr.length > limit;
 }
 
+const MAX_CASES = 3;   // больше трёх дел на аккаунт не держим
+
 async function issueCode(email, purpose) {
   // у показательного аккаунта код постоянный — письма не шлём и лимит не жжём
   const demoEmail = String(process.env.DEMO_EMAIL || '').toLowerCase();
@@ -282,8 +284,13 @@ async function api(req, res, url) {
     const c = String((b && b.country) || '').trim();
     if (a.length !== 9 || !c) return send(res, 400, { ok: false, error: 'need 9 digits and country' });
     if (q.caseByNumber.get(me.id, a)) return send(res, 409, { ok: false, error: 'already added' });
-    if (me.plan === 'free' && q.countCases.get(me.id).n >= 1) {
+    const mine = q.countCases.get(me.id).n;
+    if (me.plan === 'free' && mine >= 1) {
       return send(res, 402, { ok: false, error: 'free plan allows one case' });
+    }
+    // потолок на аккаунт: каждое дело — это наши запросы к EOIR, без границы аккаунт растащат
+    if (mine >= MAX_CASES) {
+      return send(res, 409, { ok: false, error: 'account limit', limit: MAX_CASES });
     }
     q.addCase.run(me.id, a, c, now());
     const row = q.caseByNumber.get(me.id, a);

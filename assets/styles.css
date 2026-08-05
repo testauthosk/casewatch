@@ -434,7 +434,8 @@ header.scrolled{ box-shadow:0 10px 34px -20px rgba(16,30,56,.5); background:rgba
 /* ─────────── каркас кабинета: слева навигация, справа содержимое ─────────── */
 .shell{ display:grid; grid-template-columns:242px minmax(0,1fr); min-height:calc(100vh - 68px);
   max-width:1440px; margin:0 auto; }
-.side{ border-right:1px solid var(--line); background:var(--surface); padding:22px 16px; position:sticky; top:68px; height:calc(100vh - 68px); }
+.side{ border-right:1px solid var(--line); background:var(--surface); padding:22px 16px; position:sticky;
+  top:69px; height:calc(100vh - 69px); overflow-y:auto; }   /* 69 = шапка вместе с её линией, иначе колонка на пиксель выше экрана */
 .side .who{ display:flex; align-items:center; gap:11px; padding:0 8px 16px; border-bottom:1px solid var(--line); margin-bottom:14px; }
 .side .who .em{ font-size:13px; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .side nav{ display:grid; gap:2px; }
@@ -443,7 +444,10 @@ header.scrolled{ box-shadow:0 10px 34px -20px rgba(16,30,56,.5); background:rgba
 .side nav a svg{ width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:1.8; flex:none; }
 .side nav a:hover{ background:var(--surface2); color:var(--ink); }
 .side nav a.on{ background:var(--acc-soft); color:var(--acc-d); }
-.side .foot{ position:absolute; left:16px; right:16px; bottom:18px; font-size:12.5px; color:var(--muted); }
+/* строка поддержки стоит сразу под меню: у нижнего края экрана её срезает
+   и панелью задач, и любым уменьшением окна */
+.side .foot{ margin-top:18px; padding:14px 12px 0; border-top:1px solid var(--line);
+  font-size:12.5px; color:var(--muted); line-height:1.5; }
 .side .foot a{ color:var(--ink2); }
 
 .main{ padding:clamp(22px,2.6vw,34px) clamp(18px,2.6vw,40px) 60px; min-width:0; }
@@ -491,7 +495,7 @@ header.scrolled{ box-shadow:0 10px 34px -20px rgba(16,30,56,.5); background:rgba
 @media(max-width:900px){
   .appbar > .wrap{ padding-left:var(--pad); padding-right:var(--pad); }
   .shell{ grid-template-columns:1fr; }
-  .side{ position:static; height:auto; border-right:0; border-bottom:1px solid var(--line); padding:14px 12px; }
+  .side{ position:static; height:auto; overflow:visible; border-right:0; border-bottom:1px solid var(--line); padding:14px 12px; }
   .side .who{ display:none; } .side .foot{ display:none; }
   .side nav{ grid-auto-flow:column; grid-auto-columns:1fr; gap:6px; }
   .side nav a{ justify-content:center; padding:9px 6px; font-size:13.5px; }

@@ -83,7 +83,7 @@
 <div class="modal" id="addWin">
   <div class="win">
     <h3>Add a case</h3>
-    <p class="hint">Enter the nine-digit A-Number exactly as it appears on the court notice.</p>
+    <p class="hint">Enter the nine-digit A-Number exactly as it appears on the court notice. One account holds up to three cases.</p>
     <div class="field" style="margin-top:16px;">
       <label for="anum">A-Number</label>
       <input id="anum" class="mono" placeholder="240-974-400" inputmode="numeric" maxlength="13">
@@ -137,7 +137,7 @@
 
       var mon = user.cases.filter(function (c) { return c.monitoring; }).length;
       var next = user.cases.map(function (c) { return c.hearingAt; }).filter(Boolean).sort()[0];
-      document.getElementById("s-total").textContent = user.cases.length;
+      document.getElementById("s-total").innerHTML = user.cases.length + ' <small>of 3</small>';
       document.getElementById("s-mon").textContent = mon + " of " + user.cases.length;
       document.getElementById("s-next").innerHTML = next
         ? '<span>' + next.split(" · ")[0] + '</span>'
@@ -211,6 +211,8 @@
       CW.api("/api/cases", { aNumber: a, country: c }).then(function (r) {
         CW.pending(btn, false);
         if (r.status === 402) return CW.err(err, "The Free plan keeps one case. Turn on monitoring to add more.");
+        if (r.status === 409 && r.data && r.data.error === "account limit")
+          return CW.err(err, "One account holds up to three cases. Remove one to add another.");
         if (r.status === 409) return CW.err(err, "This case is already on your list.");
         if (r.status !== 200) return CW.err(err, "Could not add the case. Try again.");
         document.getElementById("anum").value = "";
