@@ -204,7 +204,11 @@ footer{ background:var(--navy); color:var(--on-navy); padding:56px 0 28px; margi
 html.js .rv{ opacity:0; transform:translateY(22px); transition:opacity .6s var(--ease), transform .6s var(--ease); }
 html.js .rv.in{ opacity:1; transform:none; }
 /* when GSAP drives the motion, it owns opacity/transform — kill the CSS transition so they don't double up */
-html.gsapx .rv{ transition:none; }
+html.gsapx .rv{ transition:none; transform:none; }
+/* Когда анимациями правит GSAP, начальный сдвиг задаёт он сам инлайном.
+   Держать сдвиг ещё и в CSS нельзя: в конце анимации GSAP стирает свой
+   transform, CSS-правило оживает, и карточка отскакивает вниз — соседние
+   на мгновение наезжают друг на друга. */
 html.gsapx .rv.in{ transition:none; }
 /* header lifts on scroll */
 header{ transition:box-shadow .25s var(--ease), background-color .25s var(--ease); }
