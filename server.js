@@ -488,9 +488,7 @@ function seedDemo() {
 http.createServer((req, res) => {
   const url = req.url.split('?')[0];
   if (url === '/healthz') {
-    return send(res, 200, { ok: true, mail: mail.hasKey(),
-      // временно: нужны id, чтобы дописать переменные окружения через API
-      rw: { p: process.env.RAILWAY_PROJECT_ID, s: process.env.RAILWAY_SERVICE_ID, e: process.env.RAILWAY_ENVIRONMENT_ID } });
+    return send(res, 200, { ok: true, mail: mail.hasKey(), tg: !!(process.env.TG_BOT_TOKEN && process.env.TG_SUPPORT_CHAT) });
   }
   if (url.startsWith('/api/')) {
     return api(req, res, url).catch((e) => {
