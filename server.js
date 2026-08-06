@@ -11,6 +11,7 @@ const crypto = require('crypto');
 const { db, q, now } = require('./db');
 const mail = require('./mail');
 const oauth = require('./oauth');
+const wa = require('./whatsapp');
 
 const ROOT = __dirname;
 const PORT = process.env.PORT || 3000;
@@ -218,6 +219,101 @@ function publicUser(u) {
     channels: q.channels.all(u.id).map((c) => ({ kind: c.kind, enabled: !!c.enabled, address: c.address, verified: !!c.verified })),
     prefs: { hearing: !!prefs.hearing, decision: !!prefs.decision, appeared: !!prefs.appeared, weekly: !!prefs.weekly },
   };
+}
+
+const waSeen = new Set();   // id уже обработанных сообщений: Meta любит присылать дубли
+
+/* ── WhatsApp ──
+   Привязка одна на два входа: короткий код человек присылает либо нашему
+   номеру в Cloud API, либо стороннему боту, который зовёт /api/wa/link. */
+function linkWhatsapp(code, phone) {
+  const row = q.liveLink.get(String(code || '').trim().toUpperCase(), 'whatsapp', now());
+  if (!row) return { ok: false, error: 'code expired' };
+  const digits = String(phone || '').replace(/\D/g, '');
+  if (digits.length < 8) return { ok: false, error: 'no phone' };
+
+  // один номер — один аккаунт: у прежнего владельца отбираем
+  const busy = q.userByWa.get(digits);
+  if (busy && busy.id !== row.user_id) {
+    q.setWhatsapp.run(null, busy.id);
+    q.upsertChannel.run(busy.id, 'whatsapp', 0, null, 0);
+  }
+  q.setWhatsapp.run(digits, row.user_id);
+  q.upsertChannel.run(row.user_id, 'whatsapp', 1, digits, 1);
+  q.useLink.run(row.token);
+  q.addEvent.run(row.user_id, null, 'note', 'WhatsApp connected', now());
+  const u = q.userById.get(row.user_id);
+  return { ok: true, email: u ? u.email : null, userId: row.user_id };
+}
+
+const WA_HELP = [
+  'CaseCheck — we watch your immigration court case and tell you the moment it changes.',
+  '',
+  'What you can send here:',
+  '• *status* — how your cases look right now',
+  '• *stop* — pause alerts on WhatsApp',
+  '• *start* — turn them back on',
+  '',
+  'To connect this number, open ' + (process.env.PUBLIC_URL || 'https://uscasecheck.com')
+    + '/alerts.html and press Connect WhatsApp — you get an eight-character code, send it here.',
+].join('\n');
+
+/* Короткая сводка по делам — то же, что видно в кабинете, только словами. */
+function waCases(userId) {
+  const rows = q.cases.all(userId);
+  if (!rows.length) return 'No cases yet. Add one at ' + (process.env.PUBLIC_URL || 'https://uscasecheck.com') + '/app.html';
+  const lines = rows.map((c) => {
+    const bits = [];
+    if (c.hearing_at) bits.push('hearing ' + c.hearing_at);
+    if (c.decision) bits.push('decision: ' + c.decision);
+    if (!bits.length) bits.push(c.status === 'found' ? 'in proceedings, no date yet' : 'no record yet');
+    return '• ' + (c.name ? c.name + ' · ' : '') + c.a_number + ' — ' + bits.join(', ')
+      + (c.monitoring ? '' : ' (paused)');
+  });
+  return ['Your cases:', ''].concat(lines).join('\n');
+}
+
+/* Разговор. Отвечаем всегда: молчащий бот выглядит сломанным. */
+async function waTalk(m) {
+  if (!m.from) return;
+  const low = (m.text || '').toLowerCase();
+  const user = q.userByWa.get(m.from);
+  const code = /\b([0-9a-f]{8})\b/i.exec((m.text || '').replace(/[^0-9a-zA-Z\s]/g, ' '));
+
+  if (code) {
+    const r = linkWhatsapp(code[1], m.from);
+    if (r.ok) {
+      await wa.sendText(m.from, 'Connected ✅\nThis number is now linked to ' + r.email
+        + '. Alerts about your cases will arrive right here.\n\nSend *status* any time to see where things stand.');
+    } else {
+      await wa.sendText(m.from, r.error === 'code expired'
+        ? 'That code is not valid any more — codes live fifteen minutes. Get a fresh one on the Alerts page of your account.'
+        : 'Could not read the number this message came from. Try again in a moment.');
+    }
+    return;
+  }
+
+  if (/^\s*(stop|unsubscribe|off|отписаться)\b/.test(low)) {
+    if (user) {
+      q.upsertChannel.run(user.id, 'whatsapp', 0, m.from, 1);
+      q.addEvent.run(user.id, null, 'note', 'WhatsApp alerts paused', now());
+    }
+    return void await wa.sendText(m.from, 'Alerts on WhatsApp are off. Email still works. Send *start* to turn WhatsApp back on.');
+  }
+
+  if (/^\s*(start|on|resume)\b/.test(low) && user) {
+    q.upsertChannel.run(user.id, 'whatsapp', 1, m.from, 1);
+    return void await wa.sendText(m.from, 'Alerts on WhatsApp are on again.');
+  }
+
+  if (/\b(status|case|cases|hearing)\b/.test(low)) {
+    if (!user) return void await wa.sendText(m.from, 'This number is not connected to an account yet.\n\n' + WA_HELP);
+    return void await wa.sendText(m.from, waCases(user.id));
+  }
+
+  await wa.sendText(m.from, user
+    ? 'You are connected as ' + user.email + '.\n\n' + WA_HELP
+    : WA_HELP);
 }
 
 function readBody(req) {
@@ -463,21 +559,9 @@ async function api(req, res, url) {
       return send(res, 403, { ok: false, error: 'bad secret' });
     }
     const b = (await readBody(req)) || {};
-    const code = String(b.code || b.token || '').trim().toUpperCase();
-    const row = q.liveLink.get(code, 'whatsapp', now());
-    if (!row) return send(res, 404, { ok: false, error: 'code expired' });
-    const phone = String(b.phone || '').replace(/\D/g, '');
-    if (phone.length < 8) return send(res, 400, { ok: false, error: 'no phone' });
-
-    const busy = q.userByWa.get(phone);
-    if (busy && busy.id !== row.user_id) q.setWhatsapp.run(null, busy.id);
-
-    q.setWhatsapp.run(phone, row.user_id);
-    q.upsertChannel.run(row.user_id, 'whatsapp', 1, phone, 1);
-    q.useLink.run(row.token);
-    q.addEvent.run(row.user_id, null, 'note', 'WhatsApp connected', now());
-    const u = q.userById.get(row.user_id);
-    return send(res, 200, { ok: true, email: u ? u.email : null });
+    const r = linkWhatsapp(b.code || b.token, b.phone);
+    if (!r.ok) return send(res, r.error === 'code expired' ? 404 : 400, r);
+    return send(res, 200, { ok: true, email: r.email });
   }
 
   if (url === '/api/me' && req.method === 'GET') {
@@ -761,7 +845,8 @@ function seedDemo() {
 http.createServer((req, res) => {
   const url = req.url.split('?')[0];
   if (url === '/healthz') {
-    return send(res, 200, { ok: true, mail: mail.hasKey(), tg: !!(process.env.TG_BOT_TOKEN && process.env.TG_SUPPORT_CHAT) });
+    return send(res, 200, { ok: true, mail: mail.hasKey(), wa: wa.on(),
+      tg: !!(process.env.TG_BOT_TOKEN && process.env.TG_SUPPORT_CHAT) });
   }
   /* Веб-хук Stripe. Стоит до общего разбора тела: подпись считается по сырым
      байтам, любой предварительный JSON.parse её сломает. */
@@ -798,6 +883,37 @@ http.createServer((req, res) => {
         }
       } catch (e) { console.error('[stripe]', e.message); }
       return send(res, 200, { ok: true });
+    });
+    return;
+  }
+
+  /* Веб-хук WhatsApp. При подключении Meta зовёт GET и ждёт назад свой challenge,
+     дальше шлёт сообщения POST-ом. Тело нужно сырыми байтами: по ним подпись,
+     да и эмодзи не переживут склейку кусков через строку. */
+  if (url === '/wa/webhook' && req.method === 'GET') {
+    const answer = wa.verify(new URL(req.url, 'http://local').searchParams);
+    if (answer === null) return send(res, 403, 'no', 'text/plain');
+    return send(res, 200, answer, 'text/plain');
+  }
+  if (url === '/wa/webhook' && req.method === 'POST') {
+    const chunks = [];
+    let size = 0;
+    req.on('data', (c) => { size += c.length; if (size > 400000) return req.destroy(); chunks.push(c); });
+    req.on('end', () => {
+      const raw = Buffer.concat(chunks);
+      if (wa.sigOk(raw, req.headers['x-hub-signature-256']) === false) {
+        console.warn('[wa] подпись не сошлась');
+        return send(res, 403, { ok: false, error: 'bad signature' });
+      }
+      // Meta ждёт 200 сразу, иначе присылает то же самое снова; отвечаем и лишь потом разговариваем
+      send(res, 200, { ok: true });
+      let payload = null;
+      try { payload = JSON.parse(raw.toString('utf8')); } catch { return; }
+      for (const m of wa.incoming(payload)) {
+        if (m.id && waSeen.has(m.id)) continue;          // повтор доставки — не отвечаем дважды
+        if (m.id) { waSeen.add(m.id); if (waSeen.size > 500) waSeen.clear(); }
+        waTalk(m).catch((e) => console.error('[wa]', e.message));
+      }
     });
     return;
   }
