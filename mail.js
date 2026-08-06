@@ -60,6 +60,29 @@ function shell(inner) {
 </body></html>`;
 }
 
+
+/* Кирпичики: из них собраны все письма, чтобы отступы и типографика не разъезжались. */
+const head = (t) => `<tr><td style="padding:28px 26px 4px;"><div style="font:700 21px/1.3 ${FONT};color:${INK};">${t}</div></td></tr>`;
+const para = (t, pad) => `<tr><td style="padding:${pad || '10px 26px 0'};"><div style="font:400 15px/1.62 ${FONT};color:${INK2};">${t}</div></td></tr>`;
+const small = (t) => `<tr><td style="padding:12px 26px 22px;"><div style="font:400 12.5px/1.6 ${FONT};color:${MUTED};">${t}</div></td></tr>`;
+const button = (label, href) => `<tr><td style="padding:20px 26px 6px;">
+      <a href="${href}" style="display:inline-block;background:${ACC};color:#FFFFFF;text-decoration:none;font:700 15px/1 ${FONT};padding:14px 22px;border-radius:10px;">${label}</a>
+    </td></tr>`;
+
+/* Плашка с фактами: слева подпись, справа значение. */
+const facts = (rows) => `<tr><td style="padding:18px 26px 0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F0F4FA;border-radius:12px;">
+        ${rows.map(function (r, i) {
+          const top = i ? '10px' : '14px';
+          const bottom = i === rows.length - 1 ? '14px' : '0';
+          return `<tr>
+          <td style="padding:${top} 18px ${bottom} 18px;font:400 13px/1.5 ${FONT};color:${MUTED};">${r[0]}</td>
+          <td align="right" style="padding:${top} 18px ${bottom} 18px;font:600 14px/1.5 ${FONT};color:${INK};">${r[1]}</td>
+        </tr>`;
+        }).join('')}
+      </table>
+    </td></tr>`;
+
 function codeHtml(code, purpose) {
   const title = purpose === 'signup' ? 'Confirm your email' : 'Your sign-in code';
   const lead = purpose === 'signup'
@@ -90,23 +113,71 @@ function codeText(code, purpose) {
     + `Never share it — CaseCheck will not ask for it by phone or message.\n\n${SITE}\nQuestions: ${SUPPORT}\n`;
 }
 
-/* Письмо об изменении в деле — пригодится рассылке уведомлений. */
-function alertHtml(name, what, detail) {
-  return shell(`<tr><td style="padding:28px 26px 6px;">
-      <div style="font:700 21px/1.3 ${FONT};color:${INK};">${what}</div>
-      <div style="font:400 15px/1.6 ${FONT};color:${INK2};margin-top:8px;">${name}</div>
-    </td></tr>
-    <tr><td style="padding:16px 26px 4px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F0F4FA;border-radius:12px;">
-        <tr><td style="padding:16px 18px;font:500 15px/1.6 ${FONT};color:${INK};">${detail}</td></tr>
-      </table>
-    </td></tr>
-    <tr><td style="padding:18px 26px 24px;">
-      <a href="${SITE}/app.html" style="display:inline-block;background:${ACC};color:#FFFFFF;text-decoration:none;font:700 15px/1 ${FONT};padding:14px 22px;border-radius:10px;">Open my cases</a>
-      <div style="font:400 12.5px/1.6 ${FONT};color:${MUTED};margin-top:14px;">
-        Court schedules change. Confirm a hearing date with the court, the EOIR hotline at 1-800-898-7180, or your attorney.
-      </div>
-    </td></tr>`);
+/* Изменение в деле — то, ради чего человек и подписывался. */
+function alertHtml(m) {
+  return shell(head(m.title) + para(m.lead)
+    + facts(m.rows)
+    + button('Open my cases', SITE + '/app.html')
+    + small('Court schedules change. Confirm a hearing date with the court, the EOIR hotline at 1-800-898-7180, or your attorney.'));
+}
+
+/* Первое письмо после регистрации: что дальше и чего ждать. */
+function welcomeHtml() {
+  return shell(head('Your account is ready')
+    + para('Add the A-Number and we start watching the case. When the hearing date or the judge decision changes, you hear about it — by email, in Telegram, or on WhatsApp, whichever you connect.')
+    + facts([['Free plan', 'One case, one check'],
+             ['Monitoring', '$9.99 / month or $75 / year'],
+             ['Cases per account', 'Up to 3']])
+    + button('Add my case', SITE + '/app.html')
+    + small('CaseCheck reads the public EOIR record. It does not give legal advice and cannot change what the court publishes.'));
+}
+
+/* Итог недели — уходит тем, кто попросил его в настройках. */
+function weeklyHtml(items) {
+  const body = items.length
+    ? facts(items.map(function (i) { return [i.name, i.state]; }))
+    : para('Nothing moved this week. Your cases are being checked around the clock.', '18px 26px 0');
+  return shell(head('Your week on CaseCheck')
+    + para('A short summary of what we saw. No changes is good news — it means nothing was rescheduled.')
+    + body
+    + button('Open my cases', SITE + '/app.html')
+    + small('You can turn this summary off on the Alerts page inside your account.'));
+}
+
+/* Оплата принята. */
+function paidHtml(plan, amount, until) {
+  return shell(head('Monitoring is on')
+    + para('Payment received — thank you. Your cases are now re-checked around the clock and alerts are live.')
+    + facts([['Plan', plan === 'year' ? 'Yearly' : 'Monthly'],
+             ['Amount', '$' + amount],
+             ['Paid until', until]])
+    + button('Open my cases', SITE + '/app.html')
+    + small('Cancel any time on the Plan &amp; billing page — the plan keeps working until the end of the paid period.'));
+}
+
+/* Подписка заканчивается. */
+function expiringHtml(until) {
+  return shell(head('Your plan ends soon')
+    + para('Monitoring stays on until ' + until + '. After that we stop re-checking the cases and the alerts go quiet — the account and its history stay with you.')
+    + button('Renew monitoring', SITE + '/billing.html')
+    + small('If you meant to stop, ignore this letter. Nothing is charged without your action.'));
+}
+
+/* Смена пароля — письмо-сторож. */
+function passwordHtml() {
+  return shell(head('Your password was changed')
+    + para('The password for your CaseCheck account has just been changed, and every other device has been signed out.')
+    + para('If that was you, nothing else is needed. If it was not, write to us right away — we will lock the account.', '12px 26px 0')
+    + button('Write to support', 'mailto:' + SUPPORT)
+    + small('We never ask for your password or sign-in codes by email, phone, or message.'));
+}
+
+/* Ответ на обращение в поддержку. */
+function supportAckHtml(topic) {
+  return shell(head('We got your message')
+    + para('A person reads every message here — not a robot. We answer within one business day, usually sooner.')
+    + facts([['Topic', topic || 'General question']])
+    + small('If something changes in your case meanwhile, the alerts keep working as usual.'));
 }
 
 async function send(to, subject, html, kind, text) {
@@ -142,9 +213,47 @@ function sendCode(to, code, purpose) {
   return send(to, subject, codeHtml(code, purpose), 'code:' + purpose, codeText(code, purpose));
 }
 
-function sendAlert(to, name, what, detail) {
-  return send(to, `${what} — ${name} · CaseCheck`, alertHtml(name, what, detail), 'alert',
-    `${what}\n${name}\n\n${detail}\n\nOpen your cases: ${SITE}/app.html\n`);
+const plain = (title, lines) => `${title}\n\n${lines.join('\n')}\n\n${SITE}\nQuestions: ${SUPPORT}\n`;
+
+function sendAlert(to, m) {
+  return send(to, m.subject + ' · CaseCheck', alertHtml(m), 'alert',
+    plain(m.title, [m.lead].concat(m.rows.map(function (r) { return r[0] + ': ' + r[1]; }))));
 }
 
-module.exports = { send, sendCode, sendAlert, hasKey: () => !!KEY };
+function sendWelcome(to) {
+  return send(to, 'Your CaseCheck account is ready', welcomeHtml(), 'welcome',
+    plain('Your account is ready', ['Add the A-Number and we start watching the case.',
+      'Free plan: one case, one check. Monitoring: $9.99/month or $75/year.']));
+}
+
+function sendWeekly(to, items) {
+  return send(to, 'Your week on CaseCheck', weeklyHtml(items || []), 'weekly',
+    plain('Your week on CaseCheck', (items || []).map(function (i) { return i.name + ': ' + i.state; })));
+}
+
+function sendPaid(to, plan, amount, until) {
+  return send(to, 'Monitoring is on · CaseCheck', paidHtml(plan, amount, until), 'paid',
+    plain('Monitoring is on', ['Plan: ' + plan, 'Amount: $' + amount, 'Paid until: ' + until]));
+}
+
+function sendExpiring(to, until) {
+  return send(to, 'Your CaseCheck plan ends soon', expiringHtml(until), 'expiring',
+    plain('Your plan ends soon', ['Monitoring stays on until ' + until + '.']));
+}
+
+function sendPasswordChanged(to) {
+  return send(to, 'Your CaseCheck password was changed', passwordHtml(), 'password',
+    plain('Your password was changed', ['Every other device has been signed out.',
+      'If that was not you, write to ' + SUPPORT + ' right away.']));
+}
+
+function sendSupportAck(to, topic) {
+  return send(to, 'We got your message · CaseCheck', supportAckHtml(topic), 'support-ack',
+    plain('We got your message', ['Topic: ' + (topic || 'General question'),
+      'We answer within one business day.']));
+}
+
+module.exports = {
+  send, sendCode, sendAlert, sendWelcome, sendWeekly, sendPaid, sendExpiring,
+  sendPasswordChanged, sendSupportAck, hasKey: () => !!KEY,
+};

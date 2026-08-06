@@ -282,6 +282,7 @@ async function api(req, res, url) {
       q.initPrefs.run(u.id);
       q.upsertChannel.run(u.id, 'email', 1, email, 1);
       q.addEvent.run(u.id, null, 'note', 'Account created', now());
+      mail.sendWelcome(u.email).catch(() => {});   // первое письмо: что делать дальше
     }
     setSession(res, u.id, req.headers['user-agent']);
     return send(res, 200, { ok: true, user: publicUser(q.userByEmail.get(email)) });
@@ -358,6 +359,7 @@ async function api(req, res, url) {
       // на скрытый relay-адрес Apple писать без настройки домена нельзя — канал не включаем
       q.upsertChannel.run(u.id, 'email', r.private ? 0 : 1, r.email, 1);
       q.addEvent.run(u.id, null, 'note', 'Account created with ' + provider, now());
+      mail.sendWelcome(u.email).catch(() => {});
     }
 
     q.linkIdentity.run(provider, r.sub, u.id, r.email || null, r.private ? 1 : 0, r.name || null, now(), now());
@@ -464,6 +466,7 @@ async function api(req, res, url) {
     const keep = /(?:^|;\s*)cw=([a-f0-9]{64})\./.exec(req.headers.cookie || '');
     q.dropOtherSessions.run(me.id, keep ? keep[1] : '');
     q.addEvent.run(me.id, null, 'note', 'Password changed', now());
+    mail.sendPasswordChanged(me.email).catch(() => {});   // письмо-сторож, ответ не ждём
     return send(res, 200, { ok: true });
   }
 
@@ -564,6 +567,7 @@ async function api(req, res, url) {
     q.addTicket.run(me.id, me.email, topic || null, text, 0, now());
     const id = db.prepare('SELECT last_insert_rowid() AS id').get().id;
     const delivered = await tellSupport(id, me.email, topic, text);
+    mail.sendSupportAck(me.email, topic).catch(() => {});   // человеку — подтверждение
     // ответ всегда «принято»: обращение уже в базе, доставку добираем сами
     return send(res, 200, { ok: true, delivered });
   }
