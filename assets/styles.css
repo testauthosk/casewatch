@@ -816,6 +816,25 @@ header.scrolled{ box-shadow:0 10px 34px -20px rgba(16,30,56,.5); background:rgba
 .si b{ display:block; font-size:14.5px; }
 .si span{ font-size:12.5px; color:var(--muted); }
 
+/* ─────────── технические страницы: условия, приватность, вопросы ─────────── */
+.doc{ padding:clamp(30px,4vw,54px) 0 clamp(40px,5vw,72px); }
+.doc .wrap{ max-width:760px; }
+.doc h1{ font-size:clamp(28px,3.4vw,38px); margin-top:6px; }
+.doc .upd{ color:var(--muted); font-size:13px; margin-top:10px; }
+.doc .lead{ font-size:17.5px; color:var(--ink2); line-height:1.62; margin-top:22px; }
+.doc h2{ font-size:20px; margin-top:34px; }
+.doc p{ margin-top:12px; line-height:1.68; color:var(--ink2); }
+.doc p b,.doc li b{ color:var(--ink); }
+.doc a{ color:var(--acc-d); font-weight:600; }
+.doc a:hover{ text-decoration:underline; }
+.doc .note{ background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--acc);
+  border-radius:var(--r-sm); padding:14px 16px; margin-top:18px; font-size:14.5px; }
+.doc ul.dots{ list-style:none; margin-top:14px; display:grid; gap:10px; }
+.doc ul.dots li{ position:relative; padding-left:20px; color:var(--ink2); line-height:1.6; }
+.doc ul.dots li::before{ content:""; position:absolute; left:2px; top:10px; width:7px; height:7px;
+  border-radius:50%; background:var(--acc); }
+.doc .faq .qa{ background:var(--surface); }
+
 /* ─────────── страница дела ─────────── */
 .main .head h1 .badge{ vertical-align:middle; margin-left:9px; position:relative; top:-2px; }
 .back{ display:inline-flex; align-items:center; gap:7px; font-size:13.5px; font-weight:600; color:var(--ink2); margin-bottom:14px; }
