@@ -27,15 +27,33 @@
 
   apply(saved() === 'dark' ? 'dark' : 'light');
 
-  var SUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">'
-    + '<circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.2M12 19.2v2.2M4.2 12H2M22 12h-2.2'
-    + 'M6.3 6.3 4.8 4.8M19.2 19.2l-1.5-1.5M17.7 6.3l1.5-1.5M4.8 19.2l1.5-1.5"/></svg>';
-  var MOON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
-    + 'stroke-linejoin="round"><path d="M20 14.2A8.2 8.2 0 0 1 9.8 4a8.4 8.4 0 1 0 10.2 10.2z"/></svg>';
+  /* Одна фигура вместо двух стоковых иконок: диск, из которого выезжающий
+     сверху круг «выкусывает» месяц, лучи втягиваются, проступают звёзды.
+     Всё переходами по классу — иконка не подменяется, а превращается. */
+  var seq = 0;
+  function icon() {
+    var id = 'cut' + (++seq);
+    var rays = '';
+    for (var i = 0; i < 8; i++) {
+      var a = (i * Math.PI) / 4;
+      var x1 = 12 + Math.cos(a) * 8.4, y1 = 12 + Math.sin(a) * 8.4;
+      var x2 = 12 + Math.cos(a) * 10.8, y2 = 12 + Math.sin(a) * 10.8;
+      rays += '<line x1="' + x1.toFixed(2) + '" y1="' + y1.toFixed(2) + '" x2="' + x2.toFixed(2)
+        + '" y2="' + y2.toFixed(2) + '"/>';
+    }
+    return '<svg class="sunmoon" viewBox="0 0 24 24" aria-hidden="true">'
+      + '<mask id="' + id + '"><rect x="0" y="0" width="24" height="24" fill="#fff"/>'
+      + '<circle class="bite" cx="24" cy="1" r="7.4" fill="#000"/></mask>'
+      + '<circle class="body" cx="12" cy="12" r="5.6" mask="url(#' + id + ')"/>'
+      + '<g class="rays">' + rays + '</g>'
+      + '<g class="stars"><path d="M18.6 5.4v2.2M17.5 6.5h2.2"/>'
+      + '<path d="M7.4 4.6v1.5M6.65 5.35h1.5"/></g>'
+      + '</svg>';
+  }
 
   function paint(btn) {
     var dark = now() === 'dark';
-    btn.innerHTML = '<span class="ring"></span>' + (dark ? SUN : MOON);
+    btn.classList.toggle('night', dark);
     btn.setAttribute('aria-label', dark ? 'Switch to day mode' : 'Switch to night mode');
     btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
   }
@@ -71,6 +89,7 @@
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'theme-btn';
+      btn.innerHTML = '<span class="ring"></span>' + icon();
       paint(btn);
       fab.parentNode.insertBefore(btn, fab.nextSibling);
 
