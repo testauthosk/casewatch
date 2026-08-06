@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>CaseWatch — Track Your U.S. Immigration Court Case (EOIR)</title>
+<title>CaseCheck — Track Your U.S. Immigration Court Case (EOIR)</title>
 <meta name="description" content="Check your U.S. immigration court (EOIR) case status in seconds and get alerted the moment anything changes. Free check, 24/7 monitoring, alerts by email and Telegram." />
-<!-- CaseWatch — web app landing (frontend/visual pass). "CaseWatch" is a working name — replace when confirmed.
+<!-- CaseCheck — web app landing (frontend/visual pass). "CaseCheck" is a working name — replace when confirmed.
      Backend (shared DB + ACIS engine + Stripe on Anton's PC) and account linking come after the visual is approved. -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2 27 6v9c0 7-5 12-11 15C10 27 5 22 5 15V6z' fill='%2312A98D'/%3E%3Cpath d='M11 16l3.5 3.5L21 12' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,7 +20,7 @@
   <div class="wrap nav">
     <a href="#top" class="brand">
       <svg class="mk" viewBox="0 0 32 32"><path d="M16 2 27 6v9c0 7-5 12-11 15C10 27 5 22 5 15V6z" fill="#12A98D"/><path d="M11 16l3.5 3.5L21 12" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <b>Case<span>Watch</span></b>
+      <b>Case<span>Check</span></b>
     </a>
     <nav class="lk">
       <a href="#how">How it works</a>
@@ -43,7 +43,7 @@
     <div>
       <span class="ey rv" data-hero>U.S. Immigration Court · EOIR</span>
       <h1 class="rv" data-hero>Know your court case status — <span class="g">the moment it changes.</span></h1>
-      <p class="lead rv" data-hero>Stop calling the 1-800 hotline and logging in over and over. Check your immigration court case in seconds, and let CaseWatch watch it 24/7 — we'll alert you the instant anything moves.</p>
+      <p class="lead rv" data-hero>Stop calling the 1-800 hotline and logging in over and over. Check your immigration court case in seconds, and let CaseCheck watch it 24/7 — we'll alert you the instant anything moves.</p>
 
       <div class="checkcard rv" data-hero>
         <div class="t"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg> Check your case — free with an account</div>
@@ -115,7 +115,7 @@
 <!-- HOW IT WORKS -->
 <section id="how">
   <div class="wrap">
-    <div class="sh rv"><span class="ey">How it works</span><h2>Three steps. Then never wonder again.</h2><p>Set it once and CaseWatch keeps an eye on your case around the clock.</p></div>
+    <div class="sh rv"><span class="ey">How it works</span><h2>Three steps. Then never wonder again.</h2><p>Set it once and CaseCheck keeps an eye on your case around the clock.</p></div>
     <div class="steps">
       <div class="step rv"><div class="top"><div class="n">01</div><div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v5h5"/><path d="M9 13h6"/><path d="M9 17h4"/></svg></div></div><h3>Enter your case</h3><p>Type your A-Number and country of citizenship. That's all we need. A free account keeps the check yours — and lets us alert you.</p></div>
       <div class="step rv"><div class="top"><div class="n">02</div><div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div></div><h3>See your status instantly</h3><p>We pull your current status straight from EOIR: next hearing, court, judge decision and more — in plain language.</p></div>
@@ -127,13 +127,13 @@
 <!-- FEATURES -->
 <section id="features" style="background:var(--surface); border-top:1px solid var(--line); border-bottom:1px solid var(--line);">
   <div class="wrap">
-    <div class="sh rv"><span class="ey">Why CaseWatch</span><h2>Everything you need to stay ahead of your case.</h2></div>
+    <div class="sh rv"><span class="ey">Why CaseCheck</span><h2>Everything you need to stay ahead of your case.</h2></div>
     <div class="feats">
       <div class="feat rv"><div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg></div><h3>Instant status</h3><p>Your real case status from EOIR in seconds — next hearing, court, and any decision.</p></div>
       <div class="feat rv"><div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><h3>24/7 monitoring</h3><p>We re-check your case every day so a new hearing date or decision never slips past you.</p></div>
       <div class="feat rv"><div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></div><h3>Email &amp; Telegram alerts</h3><p>Get notified the instant anything changes — wherever you already are.</p></div>
       <div class="feat rv"><div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></div><h3>Private &amp; secure</h3><p>We only use your case number to look it up. No documents, no oversharing, ever.</p></div>
-      <div class="feat rv"><div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg></div><h3>Three languages</h3><p>Use CaseWatch in English, Spanish or Russian — the language you're comfortable in.</p></div>
+      <div class="feat rv"><div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg></div><h3>Three languages</h3><p>Use CaseCheck in English, Spanish or Russian — the language you're comfortable in.</p></div>
       <div class="feat rv"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><h3>Web + Telegram, one account</h3><p>Check on the site or in our Telegram bot — link them and see the same case in both places.</p></div>
     </div>
   </div>
@@ -144,7 +144,7 @@
   <div class="wrap in">
     <div>
       <h2>Prefer Telegram? Same case, same account.</h2>
-      <p>Already using our Telegram bot? Link it to your CaseWatch account and everything stays in sync — check on the web, get alerts in Telegram, or both.</p>
+      <p>Already using our Telegram bot? Link it to your CaseCheck account and everything stays in sync — check on the web, get alerts in Telegram, or both.</p>
       <div class="act">
         <a href="https://t.me/eoircasestatus_bot" class="btn btn-tgline">Open the Telegram bot</a>
         <a href="signup.html" class="btn btn-ghost" style="color:#fff;border-color:var(--navy-line);">Create web account</a>
@@ -200,7 +200,7 @@
       <details class="qa rv"><summary>What do I need to check my case?<span class="pl"></span></summary><p>Just your 9-digit A-Number and your country of citizenship. No documents, no account for your first check.</p></details>
       <details class="qa rv"><summary>How will I be alerted when something changes?<span class="pl"></span></summary><p>By email and/or Telegram — your choice. The moment a hearing date, court, or decision changes, you'll know.</p></details>
       <details class="qa rv"><summary>Is my information private?<span class="pl"></span></summary><p>Yes. We only use your case number to look up your status. We don't ask for documents and never sell your data.</p></details>
-      <details class="qa rv"><summary>Can I use it in Spanish or Russian?<span class="pl"></span></summary><p>Yes — CaseWatch works in English, Spanish and Russian, on the web and in the Telegram bot.</p></details>
+      <details class="qa rv"><summary>Can I use it in Spanish or Russian?<span class="pl"></span></summary><p>Yes — CaseCheck works in English, Spanish and Russian, on the web and in the Telegram bot.</p></details>
     </div>
   </div>
 </section>
@@ -224,7 +224,7 @@
   <div class="wrap">
     <div class="fgrid">
       <div class="about">
-        <a href="#top" class="brand"><svg class="mk" viewBox="0 0 32 32"><path d="M16 2 27 6v9c0 7-5 12-11 15C10 27 5 22 5 15V6z" fill="#12A98D"/><path d="M11 16l3.5 3.5L21 12" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><b style="color:#fff">Case<span style="color:#4FE0C4">Watch</span></b></a>
+        <a href="#top" class="brand"><svg class="mk" viewBox="0 0 32 32"><path d="M16 2 27 6v9c0 7-5 12-11 15C10 27 5 22 5 15V6z" fill="#12A98D"/><path d="M11 16l3.5 3.5L21 12" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><b style="color:#fff">Case<span style="color:#4FE0C4">Check</span></b></a>
         <p>Track your U.S. immigration court case status and get alerted the moment it changes — on the web or in Telegram.</p>
       </div>
       <div><h4>Product</h4><ul><li><a href="#how">How it works</a></li><li><a href="#features">Features</a></li><li><a href="#pricing">Pricing</a></li><li><a href="https://t.me/eoircasestatus_bot">Telegram bot</a></li></ul></div>
@@ -232,10 +232,10 @@
       <div><h4>Legal</h4><ul><li><a href="#">Privacy</a></li><li><a href="#">Terms</a></li><li><a href="#faq">FAQ</a></li></ul></div>
     </div>
     <div class="fbot">
-      <p>© <span class="num" id="yr">2026</span> CaseWatch. All rights reserved.</p>
+      <p>© <span class="num" id="yr">2026</span> CaseCheck. All rights reserved.</p>
       <p>English · Español · Русский</p>
     </div>
-    <p class="disclaimer">CaseWatch is an independent service and is not affiliated with, endorsed by, or connected to the U.S. Department of Justice, the Executive Office for Immigration Review (EOIR), or any government agency. Case information is sourced from the public EOIR automated case information system.</p>
+    <p class="disclaimer">CaseCheck is an independent service and is not affiliated with, endorsed by, or connected to the U.S. Department of Justice, the Executive Office for Immigration Review (EOIR), or any government agency. Case information is sourced from the public EOIR automated case information system.</p>
   </div>
 </footer>
 

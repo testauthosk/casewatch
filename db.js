@@ -1,4 +1,4 @@
-/* База CaseWatch.
+/* База CaseCheck.
 
    Одна база на веб и бота: у человека может быть и почта, и телеграм, и дела
    в обоих местах — таблицы это учитывают заранее, чтобы потом не мигрировать.
@@ -9,6 +9,8 @@ const path = require('path');
 
 const DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 fs.mkdirSync(DIR, { recursive: true });
+// имя файла оставлено прежним: на диске Railway лежат живые данные,
+// переименование файла означало бы пустую базу
 const db = new DatabaseSync(path.join(DIR, 'casewatch.db'));
 
 db.exec('PRAGMA journal_mode = WAL');

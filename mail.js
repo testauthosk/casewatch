@@ -7,19 +7,19 @@
 const { q, now } = require('./db');
 
 const KEY = process.env.RESEND_API_KEY || '';
-const FROM = process.env.MAIL_FROM || 'CaseWatch <onboarding@resend.dev>';
+const FROM = process.env.MAIL_FROM || 'CaseCheck <onboarding@resend.dev>';
 const BRAND = '#12A98D';
 const NAVY = '#101E38';
 
 function codeHtml(code, purpose) {
   const title = purpose === 'signup' ? 'Confirm your email' : 'Your sign-in code';
   const lead = purpose === 'signup'
-    ? 'Enter this code on CaseWatch to finish creating your account.'
+    ? 'Enter this code on CaseCheck to finish creating your account.'
     : 'Enter this code to sign in. If it wasn’t you, ignore this email.';
   return `<div style="font-family:Arial,Helvetica,sans-serif;background:#F5F8FC;padding:28px">
   <div style="max-width:460px;margin:0 auto;background:#fff;border:1px solid #E4E9F1;border-radius:14px;overflow:hidden">
     <div style="background:${NAVY};padding:18px 24px;color:#fff">
-      <span style="font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:${BRAND}">CaseWatch</span>
+      <span style="font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:${BRAND}">CaseCheck</span>
       <div style="font-size:20px;font-weight:bold;margin-top:4px">${title}</div>
     </div>
     <div style="padding:24px">
@@ -29,7 +29,7 @@ function codeHtml(code, purpose) {
       <p style="margin:18px 0 0;color:#8B96AD;font-size:13px">The code expires in 10 minutes.</p>
     </div>
     <div style="padding:14px 24px 20px;border-top:1px solid #EEF2F7;color:#8B96AD;font-size:12px;line-height:1.5">
-      CaseWatch is an independent service and is not affiliated with EOIR or any government agency.
+      CaseCheck is an independent service and is not affiliated with EOIR or any government agency.
     </div>
   </div>
 </div>`;
@@ -61,8 +61,8 @@ async function send(to, subject, html, kind) {
 
 function sendCode(to, code, purpose) {
   const subject = purpose === 'signup'
-    ? 'Confirm your email — CaseWatch'
-    : `${code} is your CaseWatch sign-in code`;
+    ? 'Confirm your email — CaseCheck'
+    : `${code} is your CaseCheck sign-in code`;
   return send(to, subject, codeHtml(code, purpose), 'code:' + purpose);
 }
 

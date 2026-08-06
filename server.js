@@ -1,4 +1,4 @@
-/* CaseWatch — статика + учётные записи.
+/* CaseCheck — статика + учётные записи.
 
    Центр системы теперь сайт: здесь аккаунт, дела и каналы уведомлений.
    Вход в два шага — пароль, затем код на почту; регистрация тоже
@@ -94,7 +94,7 @@ const MAX_CASES = 3;   // больше трёх дел на аккаунт не 
    без выкатки: пока не задана — ведём в самого бота, как в телеграме. */
 const SUPPORT = {
   tg: process.env.SUPPORT_TG_URL || 'https://t.me/eoircasestatus_bot',
-  email: process.env.SUPPORT_EMAIL || 'support@casewatch.app',
+  email: process.env.SUPPORT_EMAIL || 'support@casecheck.app',
 };
 
 /* Обращение из кабинета: сначала кладём в базу, потом пробуем донести до нас.
@@ -559,5 +559,5 @@ http.createServer((req, res) => {
   serveStatic(req, res);
 }).listen(PORT, () => {
   try { seedDemo(); } catch (e) { console.error('[demo]', e.message); }
-  console.log('CaseWatch on :' + PORT, '| почта:', mail.hasKey() ? 'Resend подключён' : 'ключа нет, коды в логе');
+  console.log('CaseCheck on :' + PORT, '| почта:', mail.hasKey() ? 'Resend подключён' : 'ключа нет, коды в логе');
 });

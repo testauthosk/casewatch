@@ -1,4 +1,4 @@
-/* CaseWatch motion layer — Lenis smooth scroll + GSAP reveals & parallax.
+/* CaseCheck motion layer — Lenis smooth scroll + GSAP reveals & parallax.
    Graceful: if GSAP is missing or the user prefers reduced motion, we simply
    reveal everything and fall back to native scrolling. Transform/opacity only. */
 (function () {
