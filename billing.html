@@ -91,6 +91,10 @@
           <button type="button" class="btn btn-navy" data-plan="year">$75 / year</button>
         </div>
         <div class="ferr" id="payErr"></div>
+        <a href="#" id="portal" class="btn btn-ghost btn-block" style="margin-top:12px;" hidden target="_blank" rel="noopener">
+          Manage subscription
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;"><path d="M7 17 17 7M9 7h8v8"/></svg>
+        </a>
         <p class="hint" style="font-size:12.5px;">Cancel any time — the plan stays active until the end of the paid period. Payment is handled by Stripe; we never see your card.</p>
       </div>
 
@@ -135,13 +139,20 @@
         ? when(bill.until)
         : '<small>' + (user.plan === "free" ? "not paid yet" : "—") + '</small>';
 
+      // отмена и смена карты живут в портале Stripe: ключи нам для этого не нужны
+      var portal = document.getElementById("portal");
+      portal.hidden = !bill.portal || user.plan === "free";
+      if (bill.portal) portal.href = bill.portal;
+
       var list = bill.paid || [];
       document.getElementById("noPaid").hidden = list.length > 0;
       document.getElementById("paid").innerHTML = list.map(function (p, n) {
         return '<div class="it' + (n === 0 ? " new" : "") + '"><div class="dot"></div><div>'
           + '<div class="when">' + when(p.at) + '</div>'
           + '<div class="what">$' + p.amount.toFixed(2) + ' ' + p.currency
-          + ' — ' + (p.plan === "year" ? "yearly" : "monthly") + ' plan</div></div></div>';
+          + ' — ' + (p.plan === "year" ? "yearly" : "monthly") + ' plan'
+          + (p.invoice ? ' · <a href="' + p.invoice + '" target="_blank" rel="noopener">invoice</a>' : '')
+          + '</div></div></div>';
       }).join("");
     }
 

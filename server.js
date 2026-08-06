@@ -120,11 +120,30 @@ function stripeSigOk(raw, header) {
 
 const planFromCents = (cents) => ((cents || 0) >= 5000 ? 'year' : 'month');
 
-function grantPlan(userId, plan, amount, currency, ref) {
-  const until = now() + (PLAN_DAYS[plan] || 31) * 86400;
+const asDate = (ts) => new Date(ts * 1000).toLocaleDateString('en-US',
+  { month: 'long', day: 'numeric', year: 'numeric' });
+
+/* Оплата принята. Продление считаем от текущего срока, а не от сегодня, иначе
+   ранний платёж съедал бы остаток оплаченного. Ссылку на счёт Stripe шлёт
+   отдельным событием, поэтому она может прийти и позже — тогда допишем. */
+function grantPlan(userId, plan, amount, currency, ref, invoice) {
+  // тот же платёж приходит и сессией, и счётом: второй раз не начисляем
+  if (ref && q.paidRecently.get(String(ref), now() - 900)) {
+    if (invoice) q.setInvoice.run(invoice, String(ref));
+    return false;
+  }
+  const u = q.userById.get(userId) || {};
+  const from = Math.max(now(), u.plan_until || 0);
+  const until = from + (PLAN_DAYS[plan] || 31) * 86400;
   q.setPlan.run('monitoring', until, userId);
-  q.addPayment.run(userId, (amount || 0) / 100, String(currency || 'usd').toUpperCase(), plan, 'stripe', ref || null, now());
+  q.addPayment.run(userId, (amount || 0) / 100, String(currency || 'usd').toUpperCase(),
+    plan, 'stripe', ref || null, invoice || null, now());
   q.addEvent.run(userId, null, 'note', 'Monitoring turned on — ' + (plan === 'year' ? 'yearly' : 'monthly') + ' plan', now());
+  if (u.email) {
+    mail.sendPaid(u.email, plan, ((amount || 0) / 100).toFixed(2), asDate(until), invoice || '')
+      .catch((e) => console.error('[stripe] письмо об оплате:', e.message));
+  }
+  return true;
 }
 
 /* Куда ведёт кнопка поддержки. Ссылка в настройках, чтобы поменять адрес
@@ -798,9 +817,11 @@ async function api(req, res, url) {
     return send(res, 200, {
       ok: true,
       paid: q.payments.all(me.id).map((p) => ({
-        amount: p.amount, currency: p.currency, plan: p.plan, at: p.created_at,
+        amount: p.amount, currency: p.currency, plan: p.plan, at: p.created_at, invoice: p.invoice || null,
       })),
       ready: !!(PAY.month && PAY.year),
+      // портал Stripe: там человек сам отменяет подписку и меняет карту
+      portal: process.env.STRIPE_PORTAL_URL || '',
       until: (q.userById.get(me.id) || {}).plan_until || null,
     });
   }
@@ -1053,10 +1074,20 @@ http.createServer((req, res) => {
               console.log('[stripe] оплата принята, аккаунт', uid);
             }
           }
-        } else if (ev.type === 'invoice.paid' && o.billing_reason === 'subscription_cycle') {
-          const row = q.userByPaymentRef.get(String(o.subscription || ''));
-          if (row) grantPlan(row.user_id, planFromCents(o.amount_paid), o.amount_paid, o.currency,
-            String(o.subscription || ''));
+        } else if (ev.type === 'invoice.paid') {
+          /* Счёт приходит и на первую оплату, и на каждое продление. Первую уже
+             начислила сессия — от неё нам нужна только ссылка на документ,
+             продление начисляем здесь. Повтор отсекает сам grantPlan. */
+          const ref = String(o.subscription || '');
+          const link = o.hosted_invoice_url || o.invoice_pdf || '';
+          const row = ref ? q.userByPaymentRef.get(ref) : null;
+          if (row) {
+            const fresh = grantPlan(row.user_id, planFromCents(o.amount_paid), o.amount_paid, o.currency, ref, link);
+            if (!fresh && link) q.setInvoice.run(link, ref);
+            console.log('[stripe] счёт', o.billing_reason || '', fresh ? '— продлили' : '— ссылка сохранена');
+          } else if (link) {
+            console.log('[stripe] счёт без известного плательщика:', ref || '(без подписки)');
+          }
         }
       } catch (e) { console.error('[stripe]', e.message); }
       return send(res, 200, { ok: true });

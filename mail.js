@@ -150,13 +150,15 @@ function weeklyHtml(items) {
 }
 
 /* Оплата принята. */
-function paidHtml(plan, amount, until) {
+function paidHtml(plan, amount, until, invoice) {
   return shell(head('Monitoring is on')
     + para('Payment received — thank you. Your cases are now re-checked around the clock and alerts are live.')
     + facts([['Plan', plan === 'year' ? 'Yearly' : 'Monthly'],
              ['Amount', '$' + amount],
              ['Paid until', until]])
     + button('Open my cases', SITE + '/app.html')
+    // счёт живёт у Stripe: ссылка всегда открывает свежий документ, а письмо не тяжелеет
+    + (invoice ? para('Your invoice: <a href="' + invoice + '" style="color:' + ACC + ';">view and download the PDF</a>.', '14px 26px 0') : '')
     + small('Cancel any time on the Plan &amp; billing page — the plan keeps working until the end of the paid period.'));
 }
 
@@ -238,9 +240,10 @@ function sendWeekly(to, items) {
     plain('Your week on CaseCheck', (items || []).map(function (i) { return i.name + ': ' + i.state; })));
 }
 
-function sendPaid(to, plan, amount, until) {
-  return send(to, 'Monitoring is on · CaseCheck', paidHtml(plan, amount, until), 'paid',
-    plain('Monitoring is on', ['Plan: ' + plan, 'Amount: $' + amount, 'Paid until: ' + until]));
+function sendPaid(to, plan, amount, until, invoice) {
+  return send(to, 'Monitoring is on · CaseCheck', paidHtml(plan, amount, until, invoice), 'paid',
+    plain('Monitoring is on', ['Plan: ' + plan, 'Amount: $' + amount, 'Paid until: ' + until]
+      .concat(invoice ? ['Invoice: ' + invoice] : [])));
 }
 
 function sendExpiring(to, until) {

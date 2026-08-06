@@ -171,6 +171,7 @@ for (const sql of [
   'ALTER TABLE cases ADD COLUMN rendered TEXT',
   'ALTER TABLE cases ADD COLUMN fail_count INTEGER NOT NULL DEFAULT 0',
   'ALTER TABLE cases ADD COLUMN next_check_at INTEGER',
+  'ALTER TABLE payments ADD COLUMN invoice TEXT',
 ]) { try { db.exec(sql); } catch (e) { /* колонка уже есть */ } }
 
 const now = () => Math.floor(Date.now() / 1000);
@@ -280,9 +281,15 @@ const q = {
 
   setPlan: db.prepare('UPDATE users SET plan = ?, plan_until = ? WHERE id = ?'),
   addPayment: db.prepare(
-    'INSERT INTO payments (user_id, amount, currency, plan, source, ref, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'),
+    'INSERT INTO payments (user_id, amount, currency, plan, source, ref, invoice, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'),
   payments: db.prepare(
-    'SELECT amount, currency, plan, created_at FROM payments WHERE user_id = ? ORDER BY id DESC LIMIT 12'),
+    'SELECT amount, currency, plan, invoice, created_at FROM payments WHERE user_id = ? ORDER BY id DESC LIMIT 12'),
+  // ссылка на инвойс приходит отдельным событием, позже самой оплаты
+  setInvoice: db.prepare(
+    'UPDATE payments SET invoice = ? WHERE id = (SELECT id FROM payments WHERE ref = ? ORDER BY id DESC LIMIT 1)'),
+  // тот же платёж Stripe присылает дважды (сессия и счёт) — второй раз не начисляем
+  paidRecently: db.prepare(
+    'SELECT id, user_id FROM payments WHERE ref = ? AND created_at > ? ORDER BY id DESC LIMIT 1'),
   userByPaymentRef: db.prepare(
     'SELECT user_id FROM payments WHERE ref = ? AND user_id IS NOT NULL ORDER BY id DESC LIMIT 1'),
 
