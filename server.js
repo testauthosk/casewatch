@@ -90,6 +90,42 @@ function tooOften(key, limit, windowSec) {
 
 const MAX_CASES = 3;   // больше трёх дел на аккаунт не держим
 
+/* Оплата. Берём те же ссылки Stripe, что и у бота в телеграме: платёж уходит
+   на страницу Stripe, а нам возвращается событие через веб-хук. Ссылку в
+   браузере проверять нельзя — плательщика подтверждает только подпись Stripe. */
+const PAY = {
+  month: process.env.STRIPE_LINK_MONTH || '',
+  year: process.env.STRIPE_LINK_YEAR || '',
+};
+const PLAN_DAYS = { month: 31, year: 366 };
+
+/* Подпись веб-хука: заголовок вида «t=<время>,v1=<хэш>», где хэш — HMAC-SHA256
+   строки «<время>.<тело>». Тело нужно СЫРОЕ, до разбора JSON. */
+function stripeSigOk(raw, header) {
+  const secret = process.env.STRIPE_WEBHOOK_SECRET || '';
+  if (!secret || !header) return false;
+  let t = null; const v1 = [];
+  String(header).split(',').forEach((part) => {
+    const i = part.indexOf('=');
+    if (i < 0) return;
+    const k = part.slice(0, i).trim(), v = part.slice(i + 1).trim();
+    if (k === 't') t = v; else if (k === 'v1') v1.push(v);
+  });
+  if (!t || !v1.length) return false;
+  const want = crypto.createHmac('sha256', secret).update(t + '.' + raw).digest('hex');
+  return v1.some((got) => got.length === want.length
+    && crypto.timingSafeEqual(Buffer.from(got), Buffer.from(want)));
+}
+
+const planFromCents = (cents) => ((cents || 0) >= 5000 ? 'year' : 'month');
+
+function grantPlan(userId, plan, amount, currency, ref) {
+  const until = now() + (PLAN_DAYS[plan] || 31) * 86400;
+  q.setPlan.run('monitoring', until, userId);
+  q.addPayment.run(userId, (amount || 0) / 100, String(currency || 'usd').toUpperCase(), plan, 'stripe', ref || null, now());
+  q.addEvent.run(userId, null, 'note', 'Monitoring turned on — ' + (plan === 'year' ? 'yearly' : 'monthly') + ' plan', now());
+}
+
 /* Куда ведёт кнопка поддержки. Ссылка в настройках, чтобы поменять адрес
    без выкатки: пока не задана — ведём в самого бота, как в телеграме. */
 const SUPPORT = {
@@ -365,6 +401,29 @@ async function api(req, res, url) {
     return send(res, 200, { ok: true });
   }
 
+  if (url === '/api/billing/checkout' && req.method === 'POST') {
+    if (!me) return send(res, 401, { ok: false, error: 'no session' });
+    const b = (await readBody(req)) || {};
+    const plan = b.plan === 'year' ? 'year' : 'month';
+    if (!PAY[plan]) return send(res, 503, { ok: false, error: 'payments not configured' });
+    // по этой метке веб-хук поймёт, чей платёж: у бота там id телеграма, у нас — «web-<id>»
+    const url2 = PAY[plan] + '?client_reference_id=web-' + me.id
+      + '&prefilled_email=' + encodeURIComponent(me.email);
+    return send(res, 200, { ok: true, url: url2 });
+  }
+
+  if (url === '/api/billing/history' && req.method === 'GET') {
+    if (!me) return send(res, 401, { ok: false, error: 'no session' });
+    return send(res, 200, {
+      ok: true,
+      paid: q.payments.all(me.id).map((p) => ({
+        amount: p.amount, currency: p.currency, plan: p.plan, at: p.created_at,
+      })),
+      ready: !!(PAY.month && PAY.year),
+      until: (q.userById.get(me.id) || {}).plan_until || null,
+    });
+  }
+
   if (url === '/api/account/sessions' && req.method === 'POST') {
     if (!me) return send(res, 401, { ok: false, error: 'no session' });
     const keep = /(?:^|;\s*)cw=([a-f0-9]{64})\./.exec(req.headers.cookie || '');
@@ -552,6 +611,45 @@ http.createServer((req, res) => {
   if (url === '/healthz') {
     return send(res, 200, { ok: true, mail: mail.hasKey(), tg: !!(process.env.TG_BOT_TOKEN && process.env.TG_SUPPORT_CHAT) });
   }
+  /* Веб-хук Stripe. Стоит до общего разбора тела: подпись считается по сырым
+     байтам, любой предварительный JSON.parse её сломает. */
+  if (url === '/stripe/webhook' && req.method === 'POST') {
+    let raw = '';
+    req.on('data', (c) => { raw += c; if (raw.length > 200000) req.destroy(); });
+    req.on('end', () => {
+      if (!stripeSigOk(raw, req.headers['stripe-signature'])) {
+        console.warn('[stripe] подпись не сошлась');
+        return send(res, 400, { ok: false, error: 'bad signature' });
+      }
+      let ev = null;
+      try { ev = JSON.parse(raw); } catch { return send(res, 400, { ok: false, error: 'bad json' }); }
+      const o = (ev.data && ev.data.object) || {};
+      try {
+        if (ev.type === 'checkout.session.completed') {
+          const ref = String(o.client_reference_id || '');
+          const m = /^web-(\d+)$/.exec(ref);
+          if (!m) {
+            // платёж из телеграм-бота: у него своя метка и свой обработчик
+            console.log('[stripe] чужая метка, пропускаем:', ref || '(пусто)');
+          } else {
+            const uid = Number(m[1]);
+            if (q.userById.get(uid)) {
+              grantPlan(uid, planFromCents(o.amount_total), o.amount_total, o.currency,
+                String(o.subscription || o.id || ''));
+              console.log('[stripe] оплата принята, аккаунт', uid);
+            }
+          }
+        } else if (ev.type === 'invoice.paid' && o.billing_reason === 'subscription_cycle') {
+          const row = q.userByPaymentRef.get(String(o.subscription || ''));
+          if (row) grantPlan(row.user_id, planFromCents(o.amount_paid), o.amount_paid, o.currency,
+            String(o.subscription || ''));
+        }
+      } catch (e) { console.error('[stripe]', e.message); }
+      return send(res, 200, { ok: true });
+    });
+    return;
+  }
+
   if (url.startsWith('/api/')) {
     return api(req, res, url).catch((e) => {
       console.error('[api]', e);

@@ -64,8 +64,16 @@
 
     <div class="sum3">
       <div class="b"><div class="k">Current plan</div><div class="v" id="p-plan">Free</div></div>
-      <div class="b"><div class="k">Checks this month</div><div class="v">1 <small>of 1</small></div></div>
-      <div class="b"><div class="k">Next charge</div><div class="v"><small>none — you're on Free</small></div></div>
+      <div class="b"><div class="k">Cases</div><div class="v" id="p-cases">— <small>of 3</small></div></div>
+      <div class="b"><div class="k">Paid until</div><div class="v" id="p-until"><small>not paid yet</small></div></div>
+    </div>
+
+    <div class="plan-note" id="thanks" hidden style="margin-bottom:18px;">
+      <svg viewBox="0 0 24 24"><path d="M12 3 4 7v5c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V7z"/><path d="M9.5 12.5 11 14l3.5-3.5"/></svg>
+      <div>
+        <b>Payment received — turning monitoring on</b><br>
+        <span id="thanksNote">Stripe is confirming it, this takes a few seconds.</span>
+      </div>
     </div>
 
     <div class="grid2">
@@ -78,8 +86,12 @@
         <div class="code" style="letter-spacing:0;font-family:var(--sans);font-size:15px;text-align:left;">
           <b>$9.99</b> per month &nbsp;·&nbsp; or <b>$75</b> a year <span style="color:var(--acc-d);font-weight:700;">— save 37%</span>
         </div>
-        <button type="button" class="btn btn-primary btn-block" style="margin-top:14px;">Turn on monitoring</button>
-        <p class="hint" style="font-size:12.5px;">Cancel any time — the plan stays active until the end of the paid period.</p>
+        <div class="pay2">
+          <button type="button" class="btn btn-primary" data-plan="month">$9.99 / month</button>
+          <button type="button" class="btn btn-navy" data-plan="year">$75 / year</button>
+        </div>
+        <div class="ferr" id="payErr"></div>
+        <p class="hint" style="font-size:12.5px;">Cancel any time — the plan stays active until the end of the paid period. Payment is handled by Stripe; we never see your card.</p>
       </div>
 
       <div class="panel">
@@ -101,7 +113,8 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 5.5h16v13H4z"/><path d="M4 9.5h16"/></svg>
         Payment history
       </h3>
-      <p class="hint">Nothing here yet — receipts will appear after your first payment.</p>
+      <div class="tl" id="paid"></div>
+      <p class="hint" id="noPaid">Nothing here yet — receipts will appear after your first payment.</p>
     </div>
   </main>
 </div>
@@ -111,10 +124,72 @@
   document.documentElement.classList.add("js");
 
   window.addEventListener("DOMContentLoaded", function () {
-    CW.requireUser().then(function (user) {
-      if (!user) return;
-      document.getElementById("email").textContent = user.email;
+    function when(ts) {
+      return new Date(ts * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    }
+
+    function draw(user, bill) {
       document.getElementById("p-plan").textContent = user.plan === "free" ? "Free" : "Monitoring";
+      document.getElementById("p-cases").innerHTML = user.cases.length + ' <small>of 3</small>';
+      document.getElementById("p-until").innerHTML = bill.until
+        ? when(bill.until)
+        : '<small>' + (user.plan === "free" ? "not paid yet" : "—") + '</small>';
+
+      var list = bill.paid || [];
+      document.getElementById("noPaid").hidden = list.length > 0;
+      document.getElementById("paid").innerHTML = list.map(function (p, n) {
+        return '<div class="it' + (n === 0 ? " new" : "") + '"><div class="dot"></div><div>'
+          + '<div class="when">' + when(p.at) + '</div>'
+          + '<div class="what">$' + p.amount.toFixed(2) + ' ' + p.currency
+          + ' — ' + (p.plan === "year" ? "yearly" : "monthly") + ' plan</div></div></div>';
+      }).join("");
+    }
+
+    function load() {
+      return CW.api("/api/me").then(function (r) {
+        if (r.status !== 200) { location.replace("login.html"); return null; }
+        var user = r.data.user;
+        document.getElementById("email").textContent = user.email;
+        return CW.api("/api/billing/history").then(function (h) {
+          draw(user, h.data || {});
+          return user;
+        });
+      });
+    }
+
+    load();
+
+    // вернулись со страницы оплаты: ждём подтверждения от Stripe, не веря адресу
+    if (new URLSearchParams(location.search).get("paid")) {
+      document.getElementById("thanks").hidden = false;
+      var tries = 0;
+      var timer = setInterval(function () {
+        tries++;
+        load().then(function (user) {
+          if (user && user.plan !== "free") {
+            clearInterval(timer);
+            document.getElementById("thanksNote").textContent = "Monitoring is on. Thank you!";
+          } else if (tries >= 10) {
+            clearInterval(timer);
+            document.getElementById("thanksNote").textContent =
+              "Stripe has not confirmed it yet. It usually takes under a minute — refresh, and write to support if it stays like this.";
+          }
+        });
+      }, 6000);
+    }
+
+    document.querySelectorAll("[data-plan]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var err = document.getElementById("payErr");
+        CW.err(err, "");
+        CW.pending(btn, true, "Opening Stripe…");
+        CW.api("/api/billing/checkout", { plan: btn.dataset.plan }).then(function (r) {
+          CW.pending(btn, false);
+          if (r.status === 503) return CW.err(err, "Payments are being connected — one moment.");
+          if (r.status !== 200 || !r.data.url) return CW.err(err, "Could not open the payment page. Try again.");
+          location.href = r.data.url;
+        });
+      });
     });
     document.getElementById("out").addEventListener("click", function (e) {
       e.preventDefault();

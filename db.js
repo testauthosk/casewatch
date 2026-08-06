@@ -125,6 +125,18 @@ CREATE TABLE IF NOT EXISTS support (
   created_at INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS payments (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id    INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  amount     REAL NOT NULL,
+  currency   TEXT NOT NULL DEFAULT 'USD',
+  plan       TEXT NOT NULL,              -- month | year
+  source     TEXT NOT NULL,              -- stripe
+  ref        TEXT,                       -- id подписки или сессии, по нему ловим продления
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_payments_ref ON payments(ref);
+
 CREATE TABLE IF NOT EXISTS mail_log (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   email      TEXT NOT NULL,
@@ -207,6 +219,14 @@ const q = {
     'SELECT id, topic, text, delivered, created_at FROM support WHERE user_id = ? ORDER BY id DESC LIMIT 10'),
   recentTickets: db.prepare(
     'SELECT COUNT(*) AS n FROM support WHERE user_id = ? AND created_at > ?'),
+
+  setPlan: db.prepare('UPDATE users SET plan = ?, plan_until = ? WHERE id = ?'),
+  addPayment: db.prepare(
+    'INSERT INTO payments (user_id, amount, currency, plan, source, ref, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'),
+  payments: db.prepare(
+    'SELECT amount, currency, plan, created_at FROM payments WHERE user_id = ? ORDER BY id DESC LIMIT 12'),
+  userByPaymentRef: db.prepare(
+    'SELECT user_id FROM payments WHERE ref = ? AND user_id IS NOT NULL ORDER BY id DESC LIMIT 1'),
 
   logMail: db.prepare(
     'INSERT INTO mail_log (email, kind, ok, detail, created_at) VALUES (?, ?, ?, ?, ?)'),
