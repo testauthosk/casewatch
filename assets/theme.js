@@ -27,29 +27,17 @@
 
   apply(saved() === 'dark' ? 'dark' : 'light');
 
-  /* Одна фигура вместо двух стоковых иконок: диск, из которого выезжающий
-     сверху круг «выкусывает» месяц, лучи втягиваются, проступают звёзды.
-     Всё переходами по классу — иконка не подменяется, а превращается. */
-  var seq = 0;
-  function icon() {
-    var id = 'cut' + (++seq);
-    var rays = '';
-    for (var i = 0; i < 8; i++) {
-      var a = (i * Math.PI) / 4;
-      var x1 = 12 + Math.cos(a) * 8.4, y1 = 12 + Math.sin(a) * 8.4;
-      var x2 = 12 + Math.cos(a) * 10.8, y2 = 12 + Math.sin(a) * 10.8;
-      rays += '<line x1="' + x1.toFixed(2) + '" y1="' + y1.toFixed(2) + '" x2="' + x2.toFixed(2)
-        + '" y2="' + y2.toFixed(2) + '"/>';
-    }
-    return '<svg class="sunmoon" viewBox="0 0 24 24" aria-hidden="true">'
-      + '<mask id="' + id + '"><rect x="0" y="0" width="24" height="24" fill="#fff"/>'
-      + '<circle class="bite" cx="24" cy="1" r="7.4" fill="#000"/></mask>'
-      + '<circle class="body" cx="12" cy="12" r="5.6" mask="url(#' + id + ')"/>'
-      + '<g class="rays">' + rays + '</g>'
-      + '<g class="stars"><path d="M18.6 5.4v2.2M17.5 6.5h2.2"/>'
-      + '<path d="M7.4 4.6v1.5M6.65 5.35h1.5"/></g>'
-      + '</svg>';
-  }
+  /* Иконки — солнце и месяц из набора Lucide (ISC): именно они стоят в
+     большинстве переключателей, потому что у них выверенная сетка и одинаковая
+     толщина штриха с остальными иконками сайта. Обе лежат в кнопке разом и
+     сменяют друг друга поворотом, а не подставляются заново. */
+  var SUN = '<svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
+    + 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/>'
+    + '<path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/>'
+    + '<path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>';
+  var MOON = '<svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
+    + 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+    + '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>';
 
   function paint(btn) {
     var dark = now() === 'dark';
@@ -75,10 +63,11 @@
        { clipPath: 'circle(' + Math.ceil(far) + 'px at ' + x + 'px ' + y + 'px)' }],
       { duration: 620, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' }
     );
+    // Цвета текста и карточек переключаем, пока круг ещё идёт: если ждать конца,
+    // на середине анимации тёмный текст оказывается на уже тёмном фоне.
+    setTimeout(done, 200);
     grow.onfinish = function () {
-      done();
-      // круг уже закрыл экран, поэтому подмену цвета никто не увидит
-      var fade = v.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 320, easing: 'ease-out', fill: 'forwards' });
+      var fade = v.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, easing: 'ease-out', fill: 'forwards' });
       fade.onfinish = function () { v.remove(); };
     };
   }
@@ -89,7 +78,7 @@
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'theme-btn';
-      btn.innerHTML = '<span class="ring"></span>' + icon();
+      btn.innerHTML = '<span class="ring"></span>' + SUN + MOON;
       paint(btn);
       fab.parentNode.insertBefore(btn, fab.nextSibling);
 
@@ -107,7 +96,12 @@
         var colour = next === 'dark' ? '#0B1524' : '#F5F8FC';
 
         if (slow || !document.body.animate) { apply(next); paint(btn); return; }
-        wave(x, y, colour, function () { apply(next); paint(btn); });
+        wave(x, y, colour, function () {
+          // пока переключаем, даём цветам разъехаться плавно, а не скачком
+          root.classList.add('theming');
+          apply(next); paint(btn);
+          setTimeout(function () { root.classList.remove('theming'); }, 560);
+        });
       });
     });
   }
