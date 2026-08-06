@@ -28,14 +28,22 @@ const FONT = "-apple-system,'Segoe UI',Roboto,Arial,sans-serif";
 function shell(inner) {
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="light"></head>
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+<style>
+  :root{ color-scheme:light dark; supported-color-schemes:light dark; }
+  /* Outlook перекрашивает фон по-своему — возвращаем шапке её цвет */
+  [data-ogsc] .hdr, [data-ogsb] .hdr{ background:${NAVY} !important; }
+  [data-ogsc] .hdr .brand, [data-ogsb] .hdr .brand{ color:#FFFFFF !important; }
+  [data-ogsc] .hdr .kicker, [data-ogsb] .hdr .kicker{ color:#9DB0CF !important; }
+</style></head>
 <body style="margin:0;padding:0;background:#F5F8FC;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F5F8FC;padding:28px 14px;">
 <tr><td align="center">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#FFFFFF;border:1px solid ${LINE};border-radius:16px;overflow:hidden;">
-    <tr><td style="background:${NAVY};padding:20px 26px;">
-      <span style="font:700 19px/1.2 ${FONT};color:#FFFFFF;">Case<span style="color:#4FE0C4;">Check</span></span>
-      <div style="font:600 11px/1.4 ${FONT};color:#9DB0CF;letter-spacing:.10em;text-transform:uppercase;margin-top:5px;">U.S. immigration court &middot; EOIR</div>
+    <tr><td class="hdr" style="background-color:${NAVY};background-image:linear-gradient(${NAVY},${NAVY});padding:20px 26px;">
+      <span class="brand" style="font:700 19px/1.2 ${FONT};color:#FFFFFF;">Case<span style="color:#4FE0C4;">Check</span></span>
+      <div class="kicker" style="font:600 11px/1.4 ${FONT};color:#9DB0CF;letter-spacing:.10em;text-transform:uppercase;margin-top:5px;">U.S. immigration court &middot; EOIR</div>
     </td></tr>
     ${inner}
     <tr><td style="padding:18px 26px 24px;border-top:1px solid #EEF2F7;">
@@ -63,7 +71,7 @@ function codeHtml(code, purpose) {
     </td></tr>
     <tr><td style="padding:20px 26px 4px;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-        <tr><td align="center" style="background:#F0F4FA;border:1px dashed #D3DAE6;border-radius:12px;padding:18px 10px;">
+        <tr><td align="center" style="background-color:#F0F4FA;background-image:linear-gradient(#F0F4FA,#F0F4FA);border:1px dashed #D3DAE6;border-radius:12px;padding:18px 10px;">
           <span style="font:500 30px/1.1 'SFMono-Regular',Menlo,Consolas,monospace;color:${INK};letter-spacing:.18em;">${code}</span>
         </td></tr>
       </table>
@@ -94,7 +102,7 @@ function alertHtml(name, what, detail) {
       </table>
     </td></tr>
     <tr><td style="padding:18px 26px 24px;">
-      <a href="${SITE}/app.html" style="display:inline-block;background:${ACC};color:#FFFFFF;text-decoration:none;font:700 15px/1 ${FONT};padding:14px 22px;border-radius:10px;">Open my cases</a>
+      <a href="${SITE}/app.html" style="display:inline-block;background-color:${ACC};background-image:linear-gradient(${ACC},${ACC});color:#FFFFFF;text-decoration:none;font:700 15px/1 ${FONT};padding:14px 22px;border-radius:10px;">Open my cases</a>
       <div style="font:400 12.5px/1.6 ${FONT};color:${MUTED};margin-top:14px;">
         Court schedules change. Confirm a hearing date with the court, the EOIR hotline at 1-800-898-7180, or your attorney.
       </div>
