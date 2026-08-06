@@ -21,6 +21,7 @@ import re
 import urllib.error
 import urllib.request
 
+import config   # подтягивает .env бота в окружение — до чтения настроек ниже
 import countries
 
 log = logging.getLogger("site")
@@ -115,7 +116,9 @@ def _call(path, payload=None, timeout=30):
     data = json.dumps(payload).encode() if payload is not None else None
     req = urllib.request.Request(
         SITE + path, data=data, method="POST" if data else "GET",
-        headers={"content-type": "application/json", "x-worker-secret": SECRET})
+        headers={"content-type": "application/json", "x-worker-secret": SECRET,
+                 # без своего имени Cloudflare режет python-urllib как бота (1010)
+                 "user-agent": "CaseCheck-worker/1.0 (+https://uscasecheck.com)"})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.loads(r.read().decode() or "{}")
 
