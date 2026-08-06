@@ -311,7 +311,14 @@
     var shown = [];
     function draw(term) {
       var t = (term || '').trim().toLowerCase();
-      shown = t ? all.filter(function (c) { return c[1].toLowerCase().indexOf(t) >= 0; }) : all;
+      // «russ» должно первым делом давать Россию, а не Byelorussia: начало имени важнее середины
+      shown = t
+        ? all.filter(function (c) { return c[1].toLowerCase().indexOf(t) >= 0; })
+             .sort(function (a, b) {
+               var ai = a[1].toLowerCase().indexOf(t), bi = b[1].toLowerCase().indexOf(t);
+               return ai - bi || a[1].localeCompare(b[1]);
+             })
+        : all;
       hot = 0;
       list.innerHTML = shown.length
         ? shown.map(function (c, i) {
