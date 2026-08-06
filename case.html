@@ -139,6 +139,7 @@
           + fact("Country of citizenship", c.country)
           + fact("Next hearing", c.hearingAt || "None scheduled")
           + fact("Immigration court", c.court)
+          + fact("Judge", c.judge)
           + fact("Judge decision", c.decision)
           + fact("Watching since", c.createdAt ? when(c.createdAt) : "—");
 

@@ -202,11 +202,19 @@ function checkCode(email, purpose, code) {
   return { ok: true };
 }
 
+/* Подписка кончилась — значит человек снова на бесплатном. В базе plan
+   остаётся как есть (история платежей), но наружу отдаём честное состояние:
+   иначе кабинет считает его платным вечно, а проверки уже не идут. */
+function planNow(u) {
+  return (u.plan !== 'free' && (u.plan_until || 0) > now()) ? u.plan : 'free';
+}
+
 function publicUser(u) {
   const cases = q.cases.all(u.id);
   const prefs = q.prefs.get(u.id) || {};
   return {
-    email: u.email, emailVerified: !!u.email_ok, plan: u.plan, smsAddon: !!u.sms_addon,
+    email: u.email, emailVerified: !!u.email_ok, plan: planNow(u), planUntil: u.plan_until || null,
+    smsAddon: !!u.sms_addon,
     createdAt: u.created_at, hasPassword: !!u.pass_hash,
     logins: q.identitiesOf.all(u.id).map((i) => ({ provider: i.provider, at: i.created_at })),
     telegram: u.tg_username || null, telegramId: u.tg_id || null, whatsapp: u.wa_phone || null,
@@ -868,7 +876,7 @@ async function api(req, res, url) {
     if (!/^[A-Z]{2}$/.test(nat)) return send(res, 400, { ok: false, error: 'pick the country from the list' });
     if (q.caseByNumber.get(me.id, a)) return send(res, 409, { ok: false, error: 'already added' });
     const mine = q.countCases.get(me.id).n;
-    if (me.plan === 'free' && mine >= 1) {
+    if (planNow(me) === 'free' && mine >= 1) {
       return send(res, 402, { ok: false, error: 'free plan allows one case' });
     }
     // потолок на аккаунт: каждое дело — это наши запросы к EOIR, без границы аккаунт растащат
@@ -890,7 +898,7 @@ async function api(req, res, url) {
     return send(res, 200, { ok: true, case: {
       id: c.id, aNumber: c.a_number, country: c.country, status: c.status,
       name: c.name, court: c.court, hearingAt: c.hearing_at, decision: c.decision,
-      monitoring: !!c.monitoring, checkedAt: c.checked_at, createdAt: c.created_at,
+      judge: c.judge, monitoring: !!c.monitoring, checkedAt: c.checked_at, createdAt: c.created_at,
     }, events: q.caseEvents.all(c.id).map((e) => ({ kind: e.kind, text: e.text, at: e.created_at })) });
   }
   if (oneCase && req.method === 'DELETE') {
