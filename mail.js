@@ -24,7 +24,9 @@ const MUTED = '#8B96AD';
 const LINE = '#E4E9F1';
 const FONT = "-apple-system,'Segoe UI',Roboto,Arial,sans-serif";
 
-/* Шапка, подвал и оболочка одинаковы у всех писем — держим их в одном месте. */
+/* Шапка, подвал и оболочка одинаковы у всех писем — держим их в одном месте.
+   Картинку шапки кешируют и Cloudflare, и почтовые клиенты, поэтому при правке
+   меняем ИМЯ файла: иначе неделю будет ходить старая. */
 function shell(inner) {
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -40,7 +42,7 @@ function shell(inner) {
 <tr><td align="center">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#FFFFFF;border:1px solid ${LINE};border-radius:16px;overflow:hidden;">
     <tr><td class="hdr" style="background-color:${NAVY};padding:0;line-height:0;">
-      <a href="${SITE}" style="text-decoration:none;"><img src="${SITE}/assets/mail-header.png" width="480" alt="CaseCheck — U.S. immigration court, EOIR"
+      <a href="${SITE}" style="text-decoration:none;"><img src="${SITE}/assets/mail-header-v2.png" width="480" alt="CaseCheck — U.S. immigration court, EOIR"
         style="display:block;width:100%;max-width:480px;height:auto;border:0;outline:none;color:#FFFFFF;font:700 18px/84px ${FONT};"></a>
     </td></tr>
     ${inner}
