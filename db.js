@@ -130,6 +130,7 @@ CREATE TABLE IF NOT EXISTS support (
 CREATE TABLE IF NOT EXISTS link_codes (
   token      TEXT PRIMARY KEY,
   user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  kind       TEXT NOT NULL DEFAULT 'telegram',   -- telegram | whatsapp
   expires_at INTEGER NOT NULL,
   used       INTEGER NOT NULL DEFAULT 0,
   created_at INTEGER NOT NULL
@@ -156,6 +157,10 @@ CREATE TABLE IF NOT EXISTS mail_log (
   created_at INTEGER NOT NULL
 );
 `);
+
+// таблица могла появиться до колонки kind — добавляем на месте, без миграций
+try { db.exec("ALTER TABLE link_codes ADD COLUMN kind TEXT NOT NULL DEFAULT 'telegram'"); }
+catch (e) { /* колонка уже есть */ }
 
 const now = () => Math.floor(Date.now() / 1000);
 
@@ -231,13 +236,15 @@ const q = {
     'SELECT COUNT(*) AS n FROM support WHERE user_id = ? AND created_at > ?'),
 
   addLink: db.prepare(
-    'INSERT INTO link_codes (token, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)'),
+    'INSERT INTO link_codes (token, user_id, kind, expires_at, created_at) VALUES (?, ?, ?, ?, ?)'),
   liveLink: db.prepare(
-    'SELECT * FROM link_codes WHERE token = ? AND used = 0 AND expires_at > ?'),
+    'SELECT * FROM link_codes WHERE token = ? AND kind = ? AND used = 0 AND expires_at > ?'),
   useLink: db.prepare('UPDATE link_codes SET used = 1 WHERE token = ?'),
   setTelegram: db.prepare('UPDATE users SET tg_id = ?, tg_username = ? WHERE id = ?'),
   clearTelegram: db.prepare('UPDATE users SET tg_id = NULL, tg_username = NULL WHERE id = ?'),
   userByTg: db.prepare('SELECT * FROM users WHERE tg_id = ?'),
+  setWhatsapp: db.prepare('UPDATE users SET wa_phone = ? WHERE id = ?'),
+  userByWa: db.prepare('SELECT * FROM users WHERE wa_phone = ?'),
 
   setPlan: db.prepare('UPDATE users SET plan = ?, plan_until = ? WHERE id = ?'),
   addPayment: db.prepare(

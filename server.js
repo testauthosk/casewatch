@@ -388,7 +388,7 @@ async function api(req, res, url) {
       return send(res, 403, { ok: false, error: 'bad secret' });
     }
     const b = (await readBody(req)) || {};
-    const row = q.liveLink.get(String(b.token || ''), now());
+    const row = q.liveLink.get(String(b.token || ''), 'telegram', now());
     if (!row) return send(res, 404, { ok: false, error: 'code expired' });
     const tgId = Number(b.tgId || 0);
     if (!tgId) return send(res, 400, { ok: false, error: 'no telegram id' });
@@ -412,6 +412,33 @@ async function api(req, res, url) {
         q.addEvent.run(row.user_id, null, 'note', 'Monitoring carried over from the Telegram bot', now());
       }
     }
+    const u = q.userById.get(row.user_id);
+    return send(res, 200, { ok: true, email: u ? u.email : null });
+  }
+
+  /* Зовёт будущий бот WhatsApp: код из сообщения плюс номер отправителя. */
+  if (url === '/api/wa/link' && req.method === 'POST') {
+    const secret = process.env.WA_LINK_SECRET || process.env.TG_LINK_SECRET || '';
+    if (!secret) return send(res, 503, { ok: false, error: 'linking off' });
+    const given = String(req.headers['x-link-secret'] || '');
+    if (given.length !== secret.length
+      || !crypto.timingSafeEqual(Buffer.from(given), Buffer.from(secret))) {
+      return send(res, 403, { ok: false, error: 'bad secret' });
+    }
+    const b = (await readBody(req)) || {};
+    const code = String(b.code || b.token || '').trim().toUpperCase();
+    const row = q.liveLink.get(code, 'whatsapp', now());
+    if (!row) return send(res, 404, { ok: false, error: 'code expired' });
+    const phone = String(b.phone || '').replace(/\D/g, '');
+    if (phone.length < 8) return send(res, 400, { ok: false, error: 'no phone' });
+
+    const busy = q.userByWa.get(phone);
+    if (busy && busy.id !== row.user_id) q.setWhatsapp.run(null, busy.id);
+
+    q.setWhatsapp.run(phone, row.user_id);
+    q.upsertChannel.run(row.user_id, 'whatsapp', 1, phone, 1);
+    q.useLink.run(row.token);
+    q.addEvent.run(row.user_id, null, 'note', 'WhatsApp connected', now());
     const u = q.userById.get(row.user_id);
     return send(res, 200, { ok: true, email: u ? u.email : null });
   }
@@ -447,7 +474,7 @@ async function api(req, res, url) {
     if (!me) return send(res, 401, { ok: false, error: 'no session' });
     if (tooOften('tglink:' + ip, 10, 3600)) return send(res, 429, { ok: false, error: 'slow down' });
     const token = crypto.randomBytes(16).toString('hex');
-    q.addLink.run(token, me.id, now() + 900, now());
+    q.addLink.run(token, me.id, 'telegram', now() + 900, now());
     const bot = process.env.TG_BOT_USERNAME || 'eoircasestatus_bot';
     return send(res, 200, { ok: true, url: 'https://t.me/' + bot + '?start=link_' + token });
   }
@@ -457,6 +484,33 @@ async function api(req, res, url) {
     q.clearTelegram.run(me.id);
     q.upsertChannel.run(me.id, 'telegram', 0, null, 0);
     q.addEvent.run(me.id, null, 'note', 'Telegram disconnected', now());
+    return send(res, 200, { ok: true });
+  }
+
+  /* WhatsApp. Тот же приём, что и с телеграмом: сайт выдаёт короткий код,
+     человек отправляет его нашему номеру, бот подтверждает вызовом сюда.
+     Номер берём из настроек — пока он не задан, канал выключен. */
+  if (url === '/api/channels/whatsapp/link' && req.method === 'POST') {
+    if (!me) return send(res, 401, { ok: false, error: 'no session' });
+    const number = String(process.env.WA_NUMBER || '').replace(/\D/g, '');
+    if (!number) return send(res, 503, { ok: false, error: 'whatsapp not configured' });
+    if (tooOften('walink:' + ip, 10, 3600)) return send(res, 429, { ok: false, error: 'slow down' });
+    // короткий код: его человек отправляет руками, длинный никто не наберёт
+    const code = crypto.randomBytes(4).toString('hex').toUpperCase();
+    q.addLink.run(code, me.id, 'whatsapp', now() + 900, now());
+    const text = 'CaseCheck link ' + code;
+    return send(res, 200, {
+      ok: true, code,
+      url: 'https://wa.me/' + number + '?text=' + encodeURIComponent(text),
+      number,
+    });
+  }
+
+  if (url === '/api/channels/whatsapp/unlink' && req.method === 'POST') {
+    if (!me) return send(res, 401, { ok: false, error: 'no session' });
+    q.setWhatsapp.run(null, me.id);
+    q.upsertChannel.run(me.id, 'whatsapp', 0, null, 0);
+    q.addEvent.run(me.id, null, 'note', 'WhatsApp disconnected', now());
     return send(res, 200, { ok: true });
   }
 

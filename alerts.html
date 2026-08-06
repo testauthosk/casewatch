@@ -89,29 +89,25 @@
       </div>
     </div>
 
-    <div class="chan">
+    <div class="chan" id="waRow">
       <div class="ic ic-wa">
         <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2m0 2a8 8 0 1 1-4.2 14.8l-.3-.2-3 .8.8-2.9-.2-.3A8 8 0 0 1 12 4m4.5 10.3c-.2-.1-1.4-.7-1.6-.8s-.4-.1-.5.1l-.7.9c-.1.2-.3.2-.5.1a6.5 6.5 0 0 1-3.2-2.8c-.1-.2 0-.4.1-.5l.4-.5.2-.4v-.4l-.7-1.6c-.2-.4-.4-.4-.5-.4h-.5c-.2 0-.5.1-.7.3-.8.8-.9 1.9-.2 3.1a10 10 0 0 0 4.3 4.1c1.6.7 2.4.6 3.1.4.5-.1 1.3-.6 1.5-1.2.2-.6.2-1 .1-1.1z"/></svg>
       </div>
       <div>
-        <b>WhatsApp</b>
-        <div class="d">Free. Most people read it fastest — good for hearing dates.</div>
+        <b>WhatsApp <span class="badge badge-off" id="waBadge">Not connected</span></b>
+        <div class="d" id="waNote">Free. Most people read it fastest — good for hearing dates.</div>
       </div>
       <div class="act">
-        <button type="button" class="btn btn-ghost" onclick="document.getElementById('wa').style.display='block';this.style.display='none'">Connect</button>
+        <button type="button" class="btn btn-ghost" id="waBtn">Connect</button>
       </div>
     </div>
 
-    <div class="panel" id="wa" style="display:none;margin-top:12px;">
+    <div class="panel" id="wa" hidden style="margin-top:12px;">
       <h3>Connect WhatsApp</h3>
-      <p class="hint">Enter the number you use in WhatsApp — we send a short code to confirm it's yours.</p>
-      <div class="row" style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end;margin-top:14px;">
-        <div class="field">
-          <label for="wanum">Phone number</label>
-          <input id="wanum" class="mono" placeholder="+1 (309) 555-0142" inputmode="tel">
-        </div>
-        <button type="button" class="btn btn-primary">Send code</button>
-      </div>
+      <p class="hint">Send us this code from the WhatsApp account you want alerts on — the message opens ready, you only press send.</p>
+      <div class="code" id="waCode" style="margin-top:14px;">— — — —</div>
+      <a class="btn btn-primary btn-block" id="waGo" href="#" target="_blank" rel="noopener" style="margin-top:12px;">Open WhatsApp</a>
+      <p class="hint" style="margin-top:10px;">The code works for fifteen minutes. This page turns green by itself once the message arrives.</p>
     </div>
 
     <div class="chan locked">
@@ -199,6 +195,22 @@
   window.addEventListener("DOMContentLoaded", function () {
     var waiting = null;
 
+    function drawWa(user) {
+      var on = !!user.whatsapp;
+      var badge = document.getElementById("waBadge");
+      var btn = document.getElementById("waBtn");
+      document.getElementById("waRow").classList.toggle("gone", !on);
+      badge.className = "badge " + (on ? "badge-ok" : "badge-off");
+      badge.textContent = on ? "Connected" : "Not connected";
+      document.getElementById("waNote").textContent = on
+        ? "+" + user.whatsapp + " — alerts arrive in WhatsApp"
+        : "Free. Most people read it fastest — good for hearing dates.";
+      btn.textContent = on ? "Disconnect" : "Connect";
+      btn.className = "btn " + (on ? "btn-danger" : "btn-ghost");
+      btn.dataset.on = on ? "1" : "";
+      if (on) document.getElementById("wa").hidden = true;
+    }
+
     function drawTg(user) {
       var on = !!user.telegram || !!user.telegramId;
       var badge = document.getElementById("tgBadge");
@@ -219,10 +231,39 @@
         if (r.status !== 200) { location.replace("login.html"); return null; }
         document.getElementById("email").textContent = r.data.user.email;
         drawTg(r.data.user);
+        drawWa(r.data.user);
         return r.data.user;
       });
     }
     load();
+
+    document.getElementById("waBtn").addEventListener("click", function () {
+      var btn = this;
+      if (btn.dataset.on) {
+        if (!confirm("Stop sending alerts to WhatsApp?")) return;
+        CW.pending(btn, true, "Disconnecting…");
+        return CW.api("/api/channels/whatsapp/unlink", {}).then(function () {
+          CW.pending(btn, false); load();
+        });
+      }
+      CW.pending(btn, true, "Preparing…");
+      CW.api("/api/channels/whatsapp/link", {}).then(function (r) {
+        CW.pending(btn, false);
+        if (r.status === 503) return alert("WhatsApp is being connected — one moment.");
+        if (r.status !== 200) return;
+        document.getElementById("wa").hidden = false;
+        document.getElementById("waCode").textContent = r.data.code;
+        document.getElementById("waGo").href = r.data.url;
+        clearInterval(waiting);
+        var tries = 0;
+        waiting = setInterval(function () {
+          tries++;
+          load().then(function (u) {
+            if ((u && u.whatsapp) || tries >= 20) clearInterval(waiting);
+          });
+        }, 3000);
+      });
+    });
 
     document.getElementById("tgBtn").addEventListener("click", function () {
       var btn = this;
