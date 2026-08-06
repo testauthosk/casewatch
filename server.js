@@ -130,7 +130,7 @@ function grantPlan(userId, plan, amount, currency, ref) {
    без выкатки: пока не задана — ведём в самого бота, как в телеграме. */
 const SUPPORT = {
   tg: process.env.SUPPORT_TG_URL || 'https://t.me/eoircasestatus_bot',
-  email: process.env.SUPPORT_EMAIL || 'support@casecheck.app',
+  email: process.env.SUPPORT_EMAIL || 'support@uscasecheck.com',
 };
 
 /* Обращение из кабинета: сначала кладём в базу, потом пробуем донести до нас.
