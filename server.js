@@ -288,6 +288,41 @@ async function api(req, res, url) {
     return send(res, 200, { ok: true, user: publicUser(q.userByEmail.get(email)) });
   }
 
+  /* Забыл пароль. Отвечаем одинаково и когда адрес есть, и когда его нет:
+     иначе по этой ручке можно перебирать, кто у нас зарегистрирован. */
+  if (url === '/api/auth/forgot' && req.method === 'POST') {
+    const b = await readBody(req);
+    const email = clean(b && b.email);
+    if (!email_ok(email)) return send(res, 400, { ok: false, error: 'bad email' });
+    if (tooOften('forgot:' + ip, 8, 3600)) return send(res, 429, { ok: false, error: 'slow down' });
+    const u = q.userByEmail.get(email);
+    if (u) {
+      const r = await issueCode(email, 'reset');
+      if (!r.ok) return send(res, 429, { ok: false, error: r.error });
+    }
+    return send(res, 200, { ok: true, next: 'reset' });
+  }
+
+  if (url === '/api/auth/reset' && req.method === 'POST') {
+    const b = await readBody(req);
+    const email = clean(b && b.email);
+    const pass = String((b && b.password) || '');
+    if (tooOften('reset:' + ip, 12, 3600)) return send(res, 429, { ok: false, error: 'slow down' });
+    const r = checkCode(email, 'reset', b && b.code);
+    if (!r.ok) return send(res, 400, { ok: false, error: r.error });
+    if (!strongEnough(pass)) return send(res, 400, { ok: false, error: 'weak password' });
+    const u = q.userByEmail.get(email);
+    if (!u) return send(res, 400, { ok: false, error: 'no user' });
+
+    q.setPass.run(hash(pass), u.id);
+    q.markVerified.run(u.id);                    // код с почты и есть подтверждение
+    q.dropOtherSessions.run(u.id, '');           // чужие сессии закрываем все до единой
+    q.addEvent.run(u.id, null, 'note', 'Password reset', now());
+    mail.sendPasswordChanged(u.email).catch(() => {});
+    setSession(res, u.id, req.headers['user-agent']);
+    return send(res, 200, { ok: true, user: publicUser(u) });
+  }
+
   if (url === '/api/auth/resend' && req.method === 'POST') {
     const b = await readBody(req);
     const email = clean(b && b.email);

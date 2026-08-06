@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en" class="nojs auth-page">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reset your CaseCheck password</title>
+<meta name="description" content="Set a new password for your CaseCheck account using a code from your email.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<script defer src="assets/lang.js"></script>
+<script defer src="assets/theme.js"></script>
+<script defer src="assets/app.js"></script>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a href="index.html" class="brand">
+      <svg class="mk" viewBox="0 0 32 32"><path d="M16 2 27 6v9c0 7-5 12-11 15C10 27 5 22 5 15V6z" fill="#12A98D"/><path d="M11 16l3.5 3.5L21 12" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <b>Case<span>Check</span></b>
+    </a>
+    <div class="act" style="margin-left:auto;">
+      <span class="lang">EN ▾</span>
+      <a href="login.html" class="btn btn-primary">Log in</a>
+    </div>
+  </div>
+</header>
+
+<main class="auth">
+  <div class="auth-card">
+
+    <div id="step1">
+      <h1>Forgot your password?</h1>
+      <p class="sub">Give us the email on the account — we send a six-digit code and you set a new password.</p>
+
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" type="email" placeholder="you@email.com" autocomplete="email">
+      </div>
+
+      <div class="ferr" id="err1"></div>
+
+      <button type="button" class="btn btn-primary btn-block" id="btn1">
+        Send the code
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+
+      <p class="auth-alt">Remembered it? <a href="login.html">Log in</a></p>
+    </div>
+
+    <div id="step2" style="display:none;">
+      <div class="mailer" aria-hidden="true">
+        <svg viewBox="0 0 72 56">
+          <rect class="body" x="4" y="14" width="64" height="38" rx="7"/>
+          <rect class="paper" x="16" y="4" width="40" height="30" rx="4"/>
+          <path class="line" d="M23 14h26M23 21h18"/>
+          <path class="flap" d="M4 20 36 41 68 20"/>
+          <path class="stamp" d="M27 33.5 33.5 40 46 26"/>
+        </svg>
+      </div>
+      <h1>Set a new password</h1>
+      <p class="sub">We sent a six-digit code to <b id="sentTo"></b>. It works for ten minutes.</p>
+
+      <div class="field">
+        <label for="code">Code from the email</label>
+        <input id="code" class="mono" inputmode="numeric" maxlength="6" placeholder="000000" autocomplete="one-time-code">
+      </div>
+
+      <div class="field" style="margin-top:14px;">
+        <label for="pass">New password</label>
+        <input id="pass" type="password" placeholder="Pick something only you know" autocomplete="new-password">
+      </div>
+      <div id="pwbox"></div>
+      <div class="field" style="margin-top:14px;">
+        <label for="pass2">Repeat new password</label>
+        <input id="pass2" type="password" placeholder="Type it once more" autocomplete="new-password">
+      </div>
+      <p class="pw-match" id="pwmatch"></p>
+
+      <div class="ferr" id="err2"></div>
+      <button type="button" class="btn btn-primary btn-block" id="btn2" style="margin-top:14px;">Save and sign in</button>
+      <p class="auth-alt"><a href="#" id="again">Send the code again</a></p>
+      <p class="auth-fine">Setting a new password signs out every other device.</p>
+    </div>
+
+  </div>
+</main>
+
+<script>
+  document.documentElement.classList.remove("nojs");
+  document.documentElement.classList.add("js");
+
+  // Восстановление в два шага: код на почту, затем новый пароль вместе с кодом.
+  window.addEventListener("DOMContentLoaded", function () {
+    var email = document.getElementById("email");
+    var step1 = document.getElementById("step1"), step2 = document.getElementById("step2");
+    var err1 = document.getElementById("err1"), err2 = document.getElementById("err2");
+    var otp = null;
+
+    var pw = CW.passwordUI(document.getElementById("pass"),
+                           document.getElementById("pass2"),
+                           document.getElementById("pwbox"));
+
+    function msg(r) {
+      var e = (r.data && r.data.error) || "";
+      if (e === "bad email") return "Check the address — something is off.";
+      if (e === "slow down" || e === "too many codes") return "Too many attempts. Try again in an hour.";
+      if (e === "code expired") return "The code expired — send a new one.";
+      if (e === "wrong code") return "That code is not right.";
+      if (e === "too many attempts") return "Too many attempts with this code. Send a new one.";
+      if (e === "weak password") return "Password needs 8 characters, an uppercase letter, a number and a symbol.";
+      return "Something went wrong. Try again.";
+    }
+
+    document.getElementById("btn1").addEventListener("click", function () {
+      var btn = this;
+      CW.err(err1, "");
+      var v = email.value.trim();
+      if (!v || v.indexOf("@") < 0) { email.focus(); return CW.err(err1, "Enter the email on your account."); }
+      CW.pending(btn, true, "Sending the code…");
+      CW.api("/api/auth/forgot", { email: v }).then(function (r) {
+        CW.pending(btn, false);
+        if (r.status !== 200) return CW.err(err1, msg(r));
+        document.getElementById("sentTo").textContent = v;
+        step1.style.display = "none"; step2.style.display = "block";
+        // поле кода собираем только сейчас — до этого его на экране не было
+        otp = otp || CW.codeInput(document.getElementById("code"), function () {
+          document.getElementById("pass").focus();
+        });
+        if (otp) otp.start(600);
+      });
+    });
+
+    document.getElementById("btn2").addEventListener("click", function () {
+      var btn = this;
+      CW.err(err2, "");
+      var code = document.getElementById("code").value.trim();
+      if (code.length !== 6) return CW.err(err2, "Enter the six digits from the email.");
+      var weak = pw.first();
+      if (weak) {
+        weak.focus();
+        return CW.err(err2, weak.id === "pass2"
+          ? "The two passwords are different."
+          : "Finish the password — the checklist above shows what is missing.");
+      }
+      CW.pending(btn, true, "Saving…");
+      CW.api("/api/auth/reset", {
+        email: email.value.trim(), code: code, password: document.getElementById("pass").value,
+      }).then(function (r) {
+        if (r.status !== 200) {
+          CW.pending(btn, false);
+          if (otp && (r.data.error === "wrong code" || r.data.error === "code expired")) otp.shake();
+          return CW.err(err2, msg(r));
+        }
+        if (otp) otp.win();
+        setTimeout(function () { location.replace("app.html"); }, 700);
+      });
+    });
+
+    document.getElementById("again").addEventListener("click", function (e) {
+      e.preventDefault();
+      CW.api("/api/auth/forgot", { email: email.value.trim() }).then(function (r) {
+        CW.err(err2, r.status === 200 ? "" : msg(r));
+        if (r.status === 200 && otp) otp.start(600);
+      });
+    });
+  });
+</script>
+</body>
+</html>

@@ -84,10 +84,13 @@ const facts = (rows) => `<tr><td style="padding:18px 26px 0;">
     </td></tr>`;
 
 function codeHtml(code, purpose) {
-  const title = purpose === 'signup' ? 'Confirm your email' : 'Your sign-in code';
+  const title = purpose === 'signup' ? 'Confirm your email'
+    : purpose === 'reset' ? 'Reset your password' : 'Your sign-in code';
   const lead = purpose === 'signup'
     ? 'Enter this code on CaseCheck to finish creating your account.'
-    : 'Enter this code to finish signing in. If it was not you, ignore this email — nobody gets in without the code.';
+    : purpose === 'reset'
+      ? 'Enter this code on CaseCheck to set a new password. If you did not ask for it, ignore this email — the current password keeps working.'
+      : 'Enter this code to finish signing in. If it was not you, ignore this email — nobody gets in without the code.';
   return shell(`<tr><td style="padding:28px 26px 6px;">
       <div style="font:700 21px/1.3 ${FONT};color:${INK};">${title}</div>
       <div style="font:400 15px/1.6 ${FONT};color:${INK2};margin-top:10px;">${lead}</div>
@@ -108,7 +111,9 @@ function codeHtml(code, purpose) {
 function codeText(code, purpose) {
   const lead = purpose === 'signup'
     ? 'Enter this code on CaseCheck to finish creating your account.'
-    : 'Enter this code to finish signing in. If it was not you, ignore this email.';
+    : purpose === 'reset'
+      ? 'Enter this code on CaseCheck to set a new password. If you did not ask for it, ignore this email.'
+      : 'Enter this code to finish signing in. If it was not you, ignore this email.';
   return `${lead}\n\n    ${code}\n\nThe code works for 10 minutes and can be used once.\n`
     + `Never share it — CaseCheck will not ask for it by phone or message.\n\n${SITE}\nQuestions: ${SUPPORT}\n`;
 }
@@ -209,7 +214,9 @@ async function send(to, subject, html, kind, text) {
 function sendCode(to, code, purpose) {
   const subject = purpose === 'signup'
     ? `${code} — confirm your email · CaseCheck`
-    : `${code} is your CaseCheck sign-in code`;
+    : purpose === 'reset'
+      ? `${code} — reset your CaseCheck password`
+      : `${code} is your CaseCheck sign-in code`;
   return send(to, subject, codeHtml(code, purpose), 'code:' + purpose, codeText(code, purpose));
 }
 
