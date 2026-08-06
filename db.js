@@ -125,6 +125,16 @@ CREATE TABLE IF NOT EXISTS support (
   created_at INTEGER NOT NULL
 );
 
+/* Одноразовые коды привязки телеграма: человек жмёт «Connect» на сайте,
+   уходит в бота по ссылке с кодом, бот отдаёт код нам вместе со своим id. */
+CREATE TABLE IF NOT EXISTS link_codes (
+  token      TEXT PRIMARY KEY,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  expires_at INTEGER NOT NULL,
+  used       INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS payments (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id    INTEGER REFERENCES users(id) ON DELETE SET NULL,
@@ -219,6 +229,15 @@ const q = {
     'SELECT id, topic, text, delivered, created_at FROM support WHERE user_id = ? ORDER BY id DESC LIMIT 10'),
   recentTickets: db.prepare(
     'SELECT COUNT(*) AS n FROM support WHERE user_id = ? AND created_at > ?'),
+
+  addLink: db.prepare(
+    'INSERT INTO link_codes (token, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)'),
+  liveLink: db.prepare(
+    'SELECT * FROM link_codes WHERE token = ? AND used = 0 AND expires_at > ?'),
+  useLink: db.prepare('UPDATE link_codes SET used = 1 WHERE token = ?'),
+  setTelegram: db.prepare('UPDATE users SET tg_id = ?, tg_username = ? WHERE id = ?'),
+  clearTelegram: db.prepare('UPDATE users SET tg_id = NULL, tg_username = NULL WHERE id = ?'),
+  userByTg: db.prepare('SELECT * FROM users WHERE tg_id = ?'),
 
   setPlan: db.prepare('UPDATE users SET plan = ?, plan_until = ? WHERE id = ?'),
   addPayment: db.prepare(

@@ -76,16 +76,16 @@
       </div>
     </div>
 
-    <div class="chan">
+    <div class="chan" id="tgRow">
       <div class="ic ic-tg">
         <svg viewBox="0 0 24 24"><path d="M21.9 4.3 18.7 19.4c-.24 1.07-.88 1.33-1.78.83l-4.92-3.63-2.37 2.28c-.26.26-.48.48-1 .48l.35-4.99 9.09-8.21c.4-.35-.09-.55-.61-.2L6.22 13.2 1.36 11.7c-1.06-.33-1.08-1.06.22-1.57l19-7.32c.88-.32 1.65.2 1.32 1.49z"/></svg>
       </div>
       <div>
-        <b>Telegram <span class="badge badge-ok">Connected</span></b>
-        <div class="d">@maria_r — the bot writes here, everything else stays on the site</div>
+        <b>Telegram <span class="badge badge-off" id="tgBadge">Not connected</span></b>
+        <div class="d" id="tgNote">Link the bot and it will write there the moment a case moves.</div>
       </div>
       <div class="act">
-        <button type="button" class="btn btn-danger" data-off="telegram">Disconnect</button>
+        <button type="button" class="btn btn-ghost" id="tgBtn">Connect</button>
       </div>
     </div>
 
@@ -197,9 +197,57 @@
     });
   });
   window.addEventListener("DOMContentLoaded", function () {
-    CW.requireUser().then(function (user) {
-      if (!user) return;
-      document.getElementById("email").textContent = user.email;
+    var waiting = null;
+
+    function drawTg(user) {
+      var on = !!user.telegram || !!user.telegramId;
+      var badge = document.getElementById("tgBadge");
+      var btn = document.getElementById("tgBtn");
+      document.getElementById("tgRow").classList.toggle("gone", !on);
+      badge.className = "badge " + (on ? "badge-ok" : "badge-off");
+      badge.textContent = on ? "Connected" : "Not connected";
+      document.getElementById("tgNote").textContent = on
+        ? (user.telegram ? "@" + user.telegram : "linked") + " — the bot writes there, everything else stays on the site"
+        : "Link the bot and it will write there the moment a case moves.";
+      btn.textContent = on ? "Disconnect" : "Connect";
+      btn.className = "btn " + (on ? "btn-danger" : "btn-ghost");
+      btn.dataset.on = on ? "1" : "";
+    }
+
+    function load() {
+      return CW.api("/api/me").then(function (r) {
+        if (r.status !== 200) { location.replace("login.html"); return null; }
+        document.getElementById("email").textContent = r.data.user.email;
+        drawTg(r.data.user);
+        return r.data.user;
+      });
+    }
+    load();
+
+    document.getElementById("tgBtn").addEventListener("click", function () {
+      var btn = this;
+      if (btn.dataset.on) {
+        if (!confirm("Stop sending alerts to Telegram?")) return;
+        CW.pending(btn, true, "Disconnecting…");
+        return CW.api("/api/channels/telegram/unlink", {}).then(function () {
+          CW.pending(btn, false); load();
+        });
+      }
+      CW.pending(btn, true, "Opening Telegram…");
+      CW.api("/api/channels/telegram/link", {}).then(function (r) {
+        CW.pending(btn, false);
+        if (r.status !== 200) return;
+        window.open(r.data.url, "_blank", "noopener");
+        // ждём, пока бот отчитается о привязке, и обновляем строку
+        clearInterval(waiting);
+        var tries = 0;
+        waiting = setInterval(function () {
+          tries++;
+          load().then(function (u) {
+            if ((u && u.telegram) || tries >= 20) clearInterval(waiting);
+          });
+        }, 3000);
+      });
     });
     document.getElementById("out").addEventListener("click", function (e) {
       e.preventDefault();

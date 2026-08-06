@@ -208,7 +208,7 @@ function publicUser(u) {
     email: u.email, emailVerified: !!u.email_ok, plan: u.plan, smsAddon: !!u.sms_addon,
     createdAt: u.created_at, hasPassword: !!u.pass_hash,
     logins: q.identitiesOf.all(u.id).map((i) => ({ provider: i.provider, at: i.created_at })),
-    telegram: u.tg_username || null, whatsapp: u.wa_phone || null,
+    telegram: u.tg_username || null, telegramId: u.tg_id || null, whatsapp: u.wa_phone || null,
     cases: cases.map((c) => ({
       id: c.id, aNumber: c.a_number, country: c.country, status: c.status,
       name: c.name, court: c.court, hearingAt: c.hearing_at, decision: c.decision,
@@ -377,6 +377,45 @@ async function api(req, res, url) {
 
   const me = userFrom(req);
 
+  /* Зовёт бот, а не браузер: сессии тут нет, доверяем общему секрету.
+     Секрета нет в настройках — ручка выключена, а не открыта настежь. */
+  if (url === '/api/tg/link' && req.method === 'POST') {
+    const secret = process.env.TG_LINK_SECRET || '';
+    if (!secret) return send(res, 503, { ok: false, error: 'linking off' });
+    const given = String(req.headers['x-link-secret'] || '');
+    if (given.length !== secret.length
+      || !crypto.timingSafeEqual(Buffer.from(given), Buffer.from(secret))) {
+      return send(res, 403, { ok: false, error: 'bad secret' });
+    }
+    const b = (await readBody(req)) || {};
+    const row = q.liveLink.get(String(b.token || ''), now());
+    if (!row) return send(res, 404, { ok: false, error: 'code expired' });
+    const tgId = Number(b.tgId || 0);
+    if (!tgId) return send(res, 400, { ok: false, error: 'no telegram id' });
+
+    // один телеграм — один аккаунт: отвязываем от прежнего, если он был
+    const busy = q.userByTg.get(tgId);
+    if (busy && busy.id !== row.user_id) q.clearTelegram.run(busy.id);
+
+    q.setTelegram.run(tgId, String(b.username || '').replace(/^@/, '') || null, row.user_id);
+    q.upsertChannel.run(row.user_id, 'telegram', 1, String(b.username || '') || String(tgId), 1);
+    q.useLink.run(row.token);
+    q.addEvent.run(row.user_id, null, 'note', 'Telegram connected', now());
+
+    /* Подписка, купленная в боте, не должна теряться на сайте: если у бота срок
+       дальше нашего, продлеваем. Наоборот сайт ничего не отнимает. */
+    const until = Number(b.planUntil || 0);
+    if (until > now()) {
+      const u0 = q.userById.get(row.user_id) || {};
+      if (until > (u0.plan_until || 0)) {
+        q.setPlan.run('monitoring', until, row.user_id);
+        q.addEvent.run(row.user_id, null, 'note', 'Monitoring carried over from the Telegram bot', now());
+      }
+    }
+    const u = q.userById.get(row.user_id);
+    return send(res, 200, { ok: true, email: u ? u.email : null });
+  }
+
   if (url === '/api/me' && req.method === 'GET') {
     if (!me) return send(res, 401, { ok: false, error: 'no session' });
     return send(res, 200, { ok: true, user: publicUser(me), support: SUPPORT });
@@ -398,6 +437,26 @@ async function api(req, res, url) {
     const keep = /(?:^|;\s*)cw=([a-f0-9]{64})\./.exec(req.headers.cookie || '');
     q.dropOtherSessions.run(me.id, keep ? keep[1] : '');
     q.addEvent.run(me.id, null, 'note', 'Password changed', now());
+    return send(res, 200, { ok: true });
+  }
+
+  /* Привязка телеграма. Сайт выдаёт одноразовый код и ссылку в бота; бот,
+     получив /start с этим кодом, зовёт нас со своим общим секретом. Сам код
+     живёт пятнадцать минут — этого хватает, чтобы дойти до бота и нажать. */
+  if (url === '/api/channels/telegram/link' && req.method === 'POST') {
+    if (!me) return send(res, 401, { ok: false, error: 'no session' });
+    if (tooOften('tglink:' + ip, 10, 3600)) return send(res, 429, { ok: false, error: 'slow down' });
+    const token = crypto.randomBytes(16).toString('hex');
+    q.addLink.run(token, me.id, now() + 900, now());
+    const bot = process.env.TG_BOT_USERNAME || 'eoircasestatus_bot';
+    return send(res, 200, { ok: true, url: 'https://t.me/' + bot + '?start=link_' + token });
+  }
+
+  if (url === '/api/channels/telegram/unlink' && req.method === 'POST') {
+    if (!me) return send(res, 401, { ok: false, error: 'no session' });
+    q.clearTelegram.run(me.id);
+    q.upsertChannel.run(me.id, 'telegram', 0, null, 0);
+    q.addEvent.run(me.id, null, 'note', 'Telegram disconnected', now());
     return send(res, 200, { ok: true });
   }
 
