@@ -503,6 +503,9 @@ function seedDemo() {
     u = q.userByEmail.get(email);
     console.log('[demo] аккаунт создан:', email);
   }
+  // показательный аккаунт держим в известном состоянии: пароль из настроек,
+  // иначе после смены имени или ротации доступ пришлось бы чинить руками
+  q.setPass.run(hash(pass), u.id);
   q.markVerified.run(u.id);
   q.initPrefs.run(u.id);
   q.upsertChannel.run(u.id, 'email', 1, email, 1);
