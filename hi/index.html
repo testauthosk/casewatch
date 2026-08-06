@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="hi" class="nojs">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CaseCheck — अपने अमेरिकी आप्रवासन कोर्ट केस (EOIR) को ट्रैक करें</title>
+<meta name="description" content="सेकंडों में अपने अमेरिकी आप्रवासन कोर्ट (EOIR) केस की स्थिति चेक करें और कुछ भी बदलते ही अलर्ट पाएं। मुफ़्त चेक, 24/7 मॉनिटरिंग, ईमेल और Telegram पर अलर्ट।" />
+<!-- CaseCheck — web app landing (frontend/visual pass). "CaseCheck" is a working name — replace when confirmed.
+     Backend (shared DB + ACIS engine + Stripe on Anton's PC) and account linking come after the visual is approved. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2 27 6v9c0 7-5 12-11 15C10 27 5 22 5 15V6z' fill='%2312A98D'/%3E%3Cpath d='M11 16l3.5 3.5L21 12' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/styles.css">
+<script defer src="../assets/lang.js"></script>
+<script defer src="../assets/theme.js"></script>
+
+<link rel="canonical" href="https://web-production-d3f84.up.railway.app/hi/">
+<link rel="alternate" hreflang="en" href="https://web-production-d3f84.up.railway.app/">
+<link rel="alternate" hreflang="es" href="https://web-production-d3f84.up.railway.app/es/">
+<link rel="alternate" hreflang="hi" href="https://web-production-d3f84.up.railway.app/hi/">
+<link rel="alternate" hreflang="ru" href="https://web-production-d3f84.up.railway.app/ru/">
+<link rel="alternate" hreflang="x-default" href="https://web-production-d3f84.up.railway.app/">
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a href="#top" class="brand">
+      <svg class="mk" viewBox="0 0 32 32"><path d="M16 2 27 6v9c0 7-5 12-11 15C10 27 5 22 5 15V6z" fill="#12A98D"/><path d="M11 16l3.5 3.5L21 12" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <b>Case<span>Check</span></b>
+    </a>
+    <nav class="lk">
+      <a href="#how">यह कैसे काम करता है</a>
+      <a href="#features">सुविधाएं</a>
+      <a href="#pricing">कीमत</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <div class="act">
+      <span class="lang">हिं ▾</span>
+      <a href="login.html" class="login">लॉग इन करें</a>
+      <a href="signup.html" class="btn btn-primary">शुरू करें</a>
+    </div>
+    <button class="burger" id="burger" aria-label="मेन्यू"><i></i><i></i><i></i></button>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="ey rv" data-hero>अमेरिकी आप्रवासन कोर्ट · EOIR</span>
+      <h1 class="rv" data-hero>अपने कोर्ट केस की स्थिति जानें — <span class="g">जिस पल वह बदले।</span></h1>
+      <p class="lead rv" data-hero>1-800 हॉटलाइन पर बार-बार कॉल करना और लॉग इन करना बंद करें। सेकंडों में अपना आप्रवासन कोर्ट केस चेक करें, और CaseCheck को इसे 24/7 देखने दें — कुछ भी बदलते ही हम आपको अलर्ट करेंगे।</p>
+
+      <div class="checkcard rv" data-hero>
+        <div class="t"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg> अपना केस चेक करें — अकाउंट के साथ मुफ़्त</div>
+        <div class="row">
+          <div class="field" id="f-anum"><label>A-Number (9 अंक)</label><input class="mono" id="anum" placeholder="240-974-400" maxlength="12" inputmode="numeric"><div class="err">अपने कोर्ट नोटिस से नौ अंक दर्ज करें।</div></div>
+          <div class="field" id="f-country"><label>नागरिकता का देश</label>
+            <div class="csel" id="csel">
+              <button type="button" class="cselbtn" id="cselbtn"><span id="csellabel" class="ph">देश चुनें…</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="cselopts" id="cselopts" role="listbox"></div>
+              <input type="hidden" id="country" name="country">
+            </div>
+            <div class="err">नागरिकता का देश चुनें।</div>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-block" onclick="demoCheck()">मेरा केस चेक करें <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button>
+        <div class="gate">
+          <div class="t" style="margin-top:2px;"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> एक स्टेप बाकी</div>
+          <div class="sum">
+            <span class="an" id="g-anum">A240-974-400</span>
+            <span class="cn" id="g-country">मेक्सिको</span>
+            <span class="edit" onclick="editCase()">बदलें</span>
+          </div>
+          <div class="why">
+            <svg viewBox="0 0 24 24"><path d="M12 3 4 7v5c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V7z"/><path d="M9.5 12.5 11 14l3.5-3.5"/></svg>
+            <span>हर चेक EOIR सिस्टम में एक लाइव लुकअप है। मुफ़्त अकाउंट इसे निष्पक्ष रखता है — और हमें आपके केस में बदलाव होते ही बताने देता है।</span>
+          </div>
+          <a class="btn btn-primary btn-block" id="g-signup" href="signup.html">मुफ़्त अकाउंट बनाएं और चेक करें<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
+          <a class="btn btn-tg btn-block" id="g-tg" href="signup.html"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.9 4.3 18.7 19.4c-.24 1.07-.88 1.33-1.78.83l-4.92-3.63-2.37 2.28c-.26.26-.48.48-1 .48l.35-4.99 9.09-8.21c.4-.35-.09-.55-.61-.2L6.22 13.2 1.36 11.7c-1.06-.33-1.08-1.06.22-1.57l19-7.32c.88-.32 1.65.2 1.32 1.49z"/></svg>Telegram के साथ जारी रखें</a>
+          <div class="fine" style="margin-top:12px;">पहले से अकाउंट है? <a href="login.html" style="color:var(--acc-d);font-weight:700">लॉग इन करें</a> — आपका केस तुरंत चेक किया जाएगा।</div>
+        </div>
+        <div class="fine" id="checkfine"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> निजी &amp; सुरक्षित। हम केवल EOIR में देखने के लिए आपके केस नंबर का उपयोग करते हैं — और कुछ नहीं।</div>
+      </div>
+
+      <div class="strip rv" data-hero>
+        <div class="s"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> सभी अमेरिकी आप्रवासन कोर्ट</div>
+        <div class="s"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> ईमेल &amp; Telegram पर अलर्ट</div>
+        <div class="s"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> English · Español · Русский</div>
+      </div>
+    </div>
+
+    <div class="mock rv" data-hero>
+      <div class="top">
+        <span class="who">केस · A240-974-400</span>
+        <span class="pill"><span class="d"></span> मॉनिटरिंग चालू</span>
+      </div>
+      <h3>केस मिला — निष्कासन कार्यवाही में</h3>
+      <div class="a">आप्रवासन कोर्ट · शिकागो, IL</div>
+      <div class="rows">
+        <div class="r"><span class="k">अगली सुनवाई</span><span class="v g">14 मार्च 2026 · सुबह 9:00 बजे</span></div>
+        <div class="r"><span class="k">सुनवाई का प्रकार</span><span class="v">इंडिविजुअल / मेरिट्स</span></div>
+        <div class="r"><span class="k">जज का फैसला</span><span class="v">लंबित</span></div>
+        <div class="r"><span class="k">आख़िरी बार चेक किया गया</span><span class="v">2 मिनट पहले</span></div>
+      </div>
+      <div class="foot"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg> यह बदलते ही आपको अलर्ट किया जाएगा।</div>
+    </div>
+  </div>
+</section>
+
+<!-- TRUST BAR -->
+<div class="trust rv">
+  <div class="wrap in">
+    <div class="t"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg> आधिकारिक EOIR डेटा</div>
+    <div class="t"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> 24/7, अपने आप चेक होता है</div>
+    <div class="t"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> निजी &amp; एन्क्रिप्टेड</div>
+    <div class="t"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg> 3 भाषाएं</div>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="wrap">
+    <div class="sh rv"><span class="ey">यह कैसे काम करता है</span><h2>तीन स्टेप। फिर कभी सोचना नहीं पड़ेगा।</h2><p>एक बार सेट करें, CaseCheck आपके केस पर चौबीसों घंटे नज़र रखेगा।</p></div>
+    <div class="steps">
+      <div class="step rv"><div class="top"><div class="n">01</div><div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v5h5"/><path d="M9 13h6"/><path d="M9 17h4"/></svg></div></div><h3>अपना केस दर्ज करें</h3><p>अपना A-Number और नागरिकता का देश टाइप करें। बस इतना ही चाहिए। मुफ़्त अकाउंट चेक को आपका बनाए रखता है — और हमें आपको अलर्ट करने देता है।</p></div>
+      <div class="step rv"><div class="top"><div class="n">02</div><div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div></div><h3>तुरंत अपनी स्थिति देखें</h3><p>हम आपकी मौजूदा स्थिति सीधे EOIR से लाते हैं: अगली सुनवाई, कोर्ट, जज का फैसला और भी बहुत कुछ — आसान भाषा में।</p></div>
+      <div class="step rv"><div class="top"><div class="n">03</div><div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></div></div><h3>हम इसे 24/7 देखते हैं</h3><p>मॉनिटरिंग चालू करें और हम रोज़ दोबारा चेक करेंगे। कुछ भी बदलते ही, आपको ईमेल या Telegram पर अलर्ट मिलेगा।</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features" style="background:var(--surface); border-top:1px solid var(--line); border-bottom:1px solid var(--line);">
+  <div class="wrap">
+    <div class="sh rv"><span class="ey">CaseCheck क्यों</span><h2>अपने केस से आगे रहने के लिए जो कुछ चाहिए, वह सब।</h2></div>
+    <div class="feats">
+      <div class="feat rv"><div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg></div><h3>तुरंत स्थिति</h3><p>सेकंडों में EOIR से आपकी असली केस स्थिति — अगली सुनवाई, कोर्ट और कोई भी फैसला।</p></div>
+      <div class="feat rv"><div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><h3>24/7 मॉनिटरिंग</h3><p>हम रोज़ आपका केस दोबारा चेक करते हैं ताकि नई सुनवाई की तारीख़ या फैसला कभी छूट न जाए।</p></div>
+      <div class="feat rv"><div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></div><h3>ईमेल &amp; Telegram अलर्ट</h3><p>कुछ भी बदलते ही सूचना पाएं — आप जहां भी हों।</p></div>
+      <div class="feat rv"><div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></div><h3>निजी &amp; सुरक्षित</h3><p>हम इसे देखने के लिए केवल आपके केस नंबर का उपयोग करते हैं। कोई दस्तावेज़ नहीं, कभी भी ज़्यादा जानकारी नहीं।</p></div>
+      <div class="feat rv"><div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg></div><h3>तीन भाषाएं</h3><p>CaseCheck को अंग्रेज़ी, स्पेनिश या रूसी में उपयोग करें — जिस भाषा में आप सहज हों।</p></div>
+      <div class="feat rv"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><h3>वेब + Telegram, एक अकाउंट</h3><p>साइट पर या हमारे Telegram बॉट में चेक करें — दोनों को लिंक करें और एक ही केस दोनों जगह देखें।</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- TELEGRAM BAND -->
+<div class="tg rv">
+  <div class="wrap in">
+    <div>
+      <h2>Telegram पसंद है? वही केस, वही अकाउंट।</h2>
+      <p>पहले से हमारा Telegram बॉट इस्तेमाल कर रहे हैं? इसे अपने CaseCheck अकाउंट से लिंक करें और सब कुछ सिंक में रहेगा — वेब पर चेक करें, Telegram पर अलर्ट पाएं, या दोनों।</p>
+      <div class="act">
+        <a href="https://t.me/eoircasestatus_bot" class="btn btn-tgline">Telegram बॉट खोलें</a>
+        <a href="signup.html" class="btn btn-ghost" style="color:#fff;border-color:var(--navy-line);">वेब अकाउंट बनाएं</a>
+      </div>
+    </div>
+    <div class="linkacc">
+      <div class="t"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg> Telegram लिंक करें</div>
+      <p>अपनी अकाउंट सेटिंग्स से एक बार कनेक्ट करें — बॉट में एक टैप और आपकी वेब + Telegram हिस्ट्री जुड़ जाएगी।</p>
+      <span class="chip">अकाउंट → सेटिंग्स → Telegram कनेक्ट करें</span>
+    </div>
+  </div>
+</div>
+
+<!-- PRICING -->
+<section id="pricing">
+  <div class="wrap">
+    <div class="sh rv"><span class="ey">कीमत</span><h2>चेक करना मुफ़्त। कुछ भी न चूकने के लिए बस कुछ डॉलर।</h2><p>मुफ़्त में शुरू करें। अपग्रेड तभी करें जब चाहें कि हम आपके लिए आपका केस देखें।</p></div>
+    <div class="plans">
+      <div class="plan rv">
+        <div class="name">मुफ़्त</div>
+        <div class="price">$0</div>
+        <div class="sub">महीने में एक केस चेक</div>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5"/></svg> तुरंत EOIR स्थिति चेक</li>
+          <li><svg viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5"/></svg> आसान भाषा में नतीजा</li>
+          <li><svg viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5"/></svg> वेब &amp; Telegram पर काम करता है</li>
+        </ul>
+        <a href="signup.html" class="btn btn-ghost btn-block">मुफ़्त शुरू करें</a>
+      </div>
+      <div class="plan pro rv">
+        <div class="badge">सबसे लोकप्रिय</div>
+        <div class="name">मॉनिटरिंग</div>
+        <div class="price">$9.99<small>/माह</small></div>
+        <div class="sub">या $75/वर्ष — 37% बचाएं</div>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5"/></svg> असीमित चेक</li>
+          <li><svg viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5"/></svg> अपने आप 24/7 मॉनिटरिंग</li>
+          <li><svg viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5"/></svg> किसी भी बदलाव पर अलर्ट — ईमेल + Telegram</li>
+          <li><svg viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5"/></svg> कई केस ट्रैक करें</li>
+        </ul>
+        <a href="signup.html" class="btn btn-primary btn-block">मॉनिटरिंग लें</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" style="background:var(--surface); border-top:1px solid var(--line);">
+  <div class="wrap">
+    <div class="sh rv"><span class="ey">FAQ</span><h2>सवालों के जवाब।</h2></div>
+    <div class="faq">
+      <details class="qa rv"><summary>स्थिति कहां से आती है?<span class="pl"></span></summary><p>सीधे आधिकारिक EOIR स्वचालित केस जानकारी सिस्टम से — वही स्रोत जो सरकार की 1-800 हॉटलाइन और वेबसाइट का है, बस पढ़ने में आसान और आपके लिए चौबीसों घंटे देखा जाता है।</p></details>
+      <details class="qa rv"><summary>अपना केस चेक करने के लिए मुझे क्या चाहिए?<span class="pl"></span></summary><p>बस आपका 9 अंकों का A-Number और नागरिकता का देश। पहले चेक के लिए कोई दस्तावेज़ नहीं, कोई अकाउंट नहीं।</p></details>
+      <details class="qa rv"><summary>कुछ बदलने पर मुझे कैसे अलर्ट किया जाएगा?<span class="pl"></span></summary><p>ईमेल और/या Telegram पर — आपकी पसंद। सुनवाई की तारीख़, कोर्ट या फैसला बदलते ही, आपको पता चल जाएगा।</p></details>
+      <details class="qa rv"><summary>क्या मेरी जानकारी निजी है?<span class="pl"></span></summary><p>हां। हम आपकी स्थिति देखने के लिए केवल आपके केस नंबर का उपयोग करते हैं। हम दस्तावेज़ नहीं मांगते और आपका डेटा कभी नहीं बेचते।</p></details>
+      <details class="qa rv"><summary>क्या मैं इसे स्पेनिश या रूसी में इस्तेमाल कर सकता हूं?<span class="pl"></span></summary><p>हां — CaseCheck अंग्रेज़ी, स्पेनिश और रूसी में काम करता है, वेब पर और Telegram बॉट में।</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section>
+  <div class="wrap">
+    <div class="cta rv">
+      <h2>अगले 30 सेकंड में अपना केस चेक करें।</h2>
+      <p>शुरू करना मुफ़्त। कोई कार्ड नहीं, कोई प्रतिबद्धता नहीं — बस मन की शांति।</p>
+      <div class="act">
+        <a href="#top" class="btn btn-primary btn-lg">मुफ़्त में मेरा केस चेक करें</a>
+        <a href="signup.html" class="btn btn-ghost btn-lg" style="color:#fff;border-color:var(--navy-line);">अकाउंट बनाएं</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <div class="fgrid">
+      <div class="about">
+        <a href="#top" class="brand"><svg class="mk" viewBox="0 0 32 32"><path d="M16 2 27 6v9c0 7-5 12-11 15C10 27 5 22 5 15V6z" fill="#12A98D"/><path d="M11 16l3.5 3.5L21 12" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><b style="color:#fff">Case<span style="color:#4FE0C4">Check</span></b></a>
+        <p>अपने अमेरिकी आप्रवासन कोर्ट केस की स्थिति ट्रैक करें और बदलते ही अलर्ट पाएं — वेब पर या Telegram में।</p>
+      </div>
+      <div><h4>प्रोडक्ट</h4><ul><li><a href="#how">यह कैसे काम करता है</a></li><li><a href="#features">सुविधाएं</a></li><li><a href="#pricing">कीमत</a></li><li><a href="https://t.me/eoircasestatus_bot">Telegram बॉट</a></li></ul></div>
+      <div><h4>अकाउंट</h4><ul><li><a href="login.html">लॉग इन करें</a></li><li><a href="signup.html">साइन अप करें</a></li><li><a href="#">Telegram कनेक्ट करें</a></li></ul></div>
+      <div><h4>कानूनी</h4><ul><li><a href="#">प्राइवेसी</a></li><li><a href="#">नियम</a></li><li><a href="#faq">FAQ</a></li></ul></div>
+    </div>
+    <div class="fbot">
+      <p>© <span class="num" id="yr">2026</span> CaseCheck. सर्वाधिकार सुरक्षित।</p>
+      <p>English · Español · Русский</p>
+    </div>
+    <p class="disclaimer">CaseCheck एक स्वतंत्र सेवा है और इसका अमेरिकी न्याय विभाग, एग्ज़िक्यूटिव ऑफिस फॉर इमिग्रेशन रिव्यू (EOIR), या किसी भी सरकारी एजेंसी से कोई संबंध, समर्थन या जुड़ाव नहीं है। केस की जानकारी सार्वजनिक EOIR स्वचालित केस जानकारी सिस्टम से ली जाती है।</p>
+  </div>
+</footer>
+
+<div class="drawer" id="drawer"><div class="pn">
+  <button class="x" id="dx" aria-label="बंद करें">✕</button>
+  <a href="#how">यह कैसे काम करता है</a><a href="#features">सुविधाएं</a><a href="#pricing">कीमत</a><a href="#faq">FAQ</a><a href="login.html">लॉग इन करें</a>
+  <a href="signup.html" class="btn btn-primary">शुरू करें</a>
+  <span class="lang">हिं ▾</span>
+</div></div>
+
+<script src="../assets/vendor/gsap.min.js"></script>
+<script src="../assets/vendor/ScrollTrigger.min.js"></script>
+<script src="../assets/vendor/lenis.min.js"></script>
+<script src="../assets/anim.js"></script>
+<script>
+  document.documentElement.classList.remove("nojs"); document.documentElement.classList.add("js");
+  document.getElementById("yr").textContent = new Date().getFullYear();
+  var dr=document.getElementById("drawer");
+  document.getElementById("burger").onclick=function(){dr.classList.add("on");};
+  document.getElementById("dx").onclick=function(){dr.classList.remove("on");};
+  dr.addEventListener("click",function(e){if(e.target===dr)dr.classList.remove("on");});
+  dr.querySelectorAll("a").forEach(function(a){a.onclick=function(){dr.classList.remove("on");};});
+  // fallback reveal — only if anim.js did NOT take over (no GSAP / reduced motion / CDN blocked)
+  if(!window.__animOwned){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target);}});},{threshold:.12,rootMargin:"0px 0px -6% 0px"});
+    document.querySelectorAll(".rv").forEach(function(el,i){el.style.transitionDelay=(Math.min(i%3,2)*70)+"ms";io.observe(el);});
+  }
+
+  // custom country dropdown
+  (function(){
+    var COUNTRIES=["Mexico","Guatemala","Honduras","El Salvador","Venezuela","Cuba","Nicaragua","Colombia","Brazil","Ecuador","Haiti","Russia","Ukraine","Belarus","India","China","Other…"];
+    var wrap=document.getElementById("csel"); if(!wrap) return;
+    var btn=document.getElementById("cselbtn"), lab=document.getElementById("csellabel"),
+        opts=document.getElementById("cselopts"), hid=document.getElementById("country");
+    var tick='<svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+    opts.innerHTML=COUNTRIES.map(function(c){return '<div class="o" role="option" data-v="'+c+'"><span>'+c+'</span>'+tick+'</div>';}).join("");
+    opts.querySelectorAll(".o").forEach(function(o){
+      o.onclick=function(){
+        opts.querySelectorAll(".o").forEach(function(x){x.classList.remove("sel");});
+        o.classList.add("sel"); lab.textContent=o.dataset.v; lab.classList.remove("ph");
+        hid.value=o.dataset.v; wrap.classList.remove("open");
+      };
+    });
+    btn.onclick=function(e){ e.stopPropagation(); wrap.classList.toggle("open"); };
+    document.addEventListener("click",function(){ wrap.classList.remove("open"); });
+    document.addEventListener("keydown",function(e){ if(e.key==="Escape") wrap.classList.remove("open"); });
+  })();
+
+  // Проверка дела — только после регистрации: каждый запрос это живой поход
+  // в систему EOIR, и отдавать его анонимно значит оплачивать чужой трафик.
+  function demoCheck(){
+    var input=document.getElementById("anum");
+    var digits=input.value.replace(/\D/g,"");
+    var country=document.getElementById("country").value;
+    var fa=document.getElementById("f-anum"), fc=document.getElementById("f-country");
+    var ok=true;
+    if(digits.length!==9){ fa.classList.add("bad"); ok=false; } else fa.classList.remove("bad");
+    if(!country){ fc.classList.add("bad"); ok=false; } else fc.classList.remove("bad");
+    if(!ok){ (digits.length!==9?input:document.getElementById("cselbtn")).focus(); return; }
+
+    var pretty="A"+digits.slice(0,3)+"-"+digits.slice(3,6)+"-"+digits.slice(6);
+    document.getElementById("g-anum").textContent=pretty;
+    document.getElementById("g-country").textContent=country;
+    var q="?a="+encodeURIComponent(digits)+"&c="+encodeURIComponent(country);
+    document.getElementById("g-signup").href="signup.html"+q;
+    document.getElementById("g-tg").href="signup.html"+q+"&via=tg";
+    document.querySelector(".checkcard").classList.add("gated");
+  }
+  function editCase(){ document.querySelector(".checkcard").classList.remove("gated"); }
+  document.addEventListener("input",function(e){
+    if(e.target.id==="anum") document.getElementById("f-anum").classList.remove("bad");
+  });
+</script>
+</body>
+</html>

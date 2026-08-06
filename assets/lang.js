@@ -9,9 +9,9 @@
 (function () {
   var LANGS = [
     { code: 'en', label: 'EN', name: 'English', dir: '', ready: true },
-    { code: 'es', label: 'ES', name: 'Español', dir: 'es', ready: false },
-    { code: 'hi', label: 'हि', name: 'हिन्दी', dir: 'hi', ready: false },
-    { code: 'ru', label: 'RU', name: 'Русский', dir: 'ru', ready: false },
+    { code: 'es', label: 'ES', name: 'Español', dir: 'es', ready: true },
+    { code: 'hi', label: 'हि', name: 'हिन्दी', dir: 'hi', ready: true },
+    { code: 'ru', label: 'RU', name: 'Русский', dir: 'ru', ready: true },
   ];
   var SPOTS = [{ x: -58, y: 26 }, { x: -22, y: 56 }, { x: 22, y: 56 }, { x: 58, y: 26 }];
 
@@ -30,10 +30,14 @@
     try { document.cookie = 'cwlang=' + code + '; path=/; max-age=31536000; samesite=lax'; } catch (e) {}
   }
 
+  var TRANSLATED = { 'index.html': 1, 'login.html': 1, 'signup.html': 1 };
+
   function urlFor(lang) {
     var parts = location.pathname.split('/').filter(Boolean);
-    if (parts.length && byCode(parts[0]).dir === parts[0] && parts[0] !== '') parts.shift();
+    if (parts.length && byCode(parts[0]).dir === parts[0]) parts.shift();
     var tail = parts.join('/') || 'index.html';
+    // кабинет пока только на английском — с него уводим на переведённую главную
+    if (!TRANSLATED[tail]) tail = 'index.html';
     return '/' + (lang.dir ? lang.dir + '/' : '') + tail;
   }
 
