@@ -1,4 +1,4 @@
-/* CaseCheck motion layer — Lenis smooth scroll + GSAP reveals & parallax.
+/* CaseCheck motion layer — GSAP reveals & parallax на родной прокрутке.
    Graceful: if GSAP is missing or the user prefers reduced motion, we simply
    reveal everything and fall back to native scrolling. Transform/opacity only. */
 (function () {
@@ -24,36 +24,24 @@
   root.classList.add("gsapx");        // CSS drops the reveal-transition; GSAP owns opacity/transform
   G.registerPlugin(ST);
 
-  /* ---- Lenis smooth scroll (desktop wheel; native momentum on touch) ---- */
+  /* Плавную прокрутку убрали намеренно: она перехватывает колесо и превращает
+     обычное листание в вязкое слоу-мо. Родная прокрутка быстрее и предсказуемее,
+     а появление блоков ниже держится на ScrollTrigger и от неё не зависит. */
   var header = document.querySelector("header");
-  if (window.Lenis) {
-    var lenis = new Lenis({
-      duration: 1.05,
-      easing: function (t) { return Math.min(1, 1.001 - Math.pow(2, -10 * t)); },
-      smoothWheel: true,
-      smoothTouch: false
-    });
-    lenis.on("scroll", function (e) {
-      ST.update();
-      if (header) header.classList.toggle("scrolled", e.scroll > 8);
-    });
-    G.ticker.add(function (t) { lenis.raf(t * 1000); });
-    G.ticker.lagSmoothing(0);
+  headerFallback();
 
-    document.querySelectorAll('a[href^="#"]').forEach(function (a) {
-      a.addEventListener("click", function (e) {
-        var id = a.getAttribute("href");
-        if (!id || id.length < 2) return;
-        var target = document.querySelector(id);
-        if (!target) return;
-        e.preventDefault();
-        lenis.scrollTo(target, { offset: -64, duration: 1.1 });
-        var dr = document.getElementById("drawer"); if (dr) dr.classList.remove("on");
-      });
+  document.querySelectorAll('a[href^="#"]').forEach(function (a) {
+    a.addEventListener("click", function (e) {
+      var id = a.getAttribute("href");
+      if (!id || id.length < 2) return;
+      var target = document.querySelector(id);
+      if (!target) return;
+      e.preventDefault();
+      var y = target.getBoundingClientRect().top + window.pageYOffset - 64;
+      window.scrollTo({ top: y, behavior: "smooth" });
+      var dr = document.getElementById("drawer"); if (dr) dr.classList.remove("on");
     });
-  } else {
-    headerFallback();
-  }
+  });
 
   /* ---- initial hidden states ----
      На узком экране карточки идут в один столбец с небольшим зазором, и сдвиг
