@@ -11,6 +11,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
+<script defer src="assets/countries.js"></script>
+<script defer src="assets/app.js"></script>
 <script defer src="assets/lang.js"></script>
 <script defer src="assets/theme.js"></script>
 
@@ -57,11 +59,7 @@
         <div class="row">
           <div class="field" id="f-anum"><label>A-Number (9 digits)</label><input class="mono" id="anum" placeholder="240-974-400" maxlength="12" inputmode="numeric"><div class="err">Enter the nine digits from your court notice.</div></div>
           <div class="field" id="f-country"><label>Country of citizenship</label>
-            <div class="csel" id="csel">
-              <button type="button" class="cselbtn" id="cselbtn"><span id="csellabel" class="ph">Select country…</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
-              <div class="cselopts" id="cselopts" role="listbox"></div>
-              <input type="hidden" id="country" name="country">
-            </div>
+            <div id="csel"></div>
             <div class="err">Choose the country of citizenship.</div>
           </div>
         </div>
@@ -269,42 +267,29 @@
     document.querySelectorAll(".rv").forEach(function(el,i){el.style.transitionDelay=(Math.min(i%3,2)*70)+"ms";io.observe(el);});
   }
 
-  // custom country dropdown
-  (function(){
-    var COUNTRIES=["Mexico","Guatemala","Honduras","El Salvador","Venezuela","Cuba","Nicaragua","Colombia","Brazil","Ecuador","Haiti","Russia","Ukraine","Belarus","India","China","Other…"];
-    var wrap=document.getElementById("csel"); if(!wrap) return;
-    var btn=document.getElementById("cselbtn"), lab=document.getElementById("csellabel"),
-        opts=document.getElementById("cselopts"), hid=document.getElementById("country");
-    var tick='<svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
-    opts.innerHTML=COUNTRIES.map(function(c){return '<div class="o" role="option" data-v="'+c+'"><span>'+c+'</span>'+tick+'</div>';}).join("");
-    opts.querySelectorAll(".o").forEach(function(o){
-      o.onclick=function(){
-        opts.querySelectorAll(".o").forEach(function(x){x.classList.remove("sel");});
-        o.classList.add("sel"); lab.textContent=o.dataset.v; lab.classList.remove("ph");
-        hid.value=o.dataset.v; wrap.classList.remove("open");
-      };
-    });
-    btn.onclick=function(e){ e.stopPropagation(); wrap.classList.toggle("open"); };
-    document.addEventListener("click",function(){ wrap.classList.remove("open"); });
-    document.addEventListener("keydown",function(e){ if(e.key==="Escape") wrap.classList.remove("open"); });
-  })();
+  // Список гражданств — общий с кабинетом: ровно тот, что понимает ACIS.
+  // Собираем после разбора страницы: этот блок выполняется раньше defer-скриптов.
+  var picker = null;
+  window.addEventListener("DOMContentLoaded", function () {
+    picker = CW.countryPicker(document.getElementById("csel"));
+  });
 
   // Проверка дела — только после регистрации: каждый запрос это живой поход
   // в систему EOIR, и отдавать его анонимно значит оплачивать чужой трафик.
   function demoCheck(){
     var input=document.getElementById("anum");
     var digits=input.value.replace(/\D/g,"");
-    var country=document.getElementById("country").value;
+    var country=picker.value();
     var fa=document.getElementById("f-anum"), fc=document.getElementById("f-country");
     var ok=true;
     if(digits.length!==9){ fa.classList.add("bad"); ok=false; } else fa.classList.remove("bad");
     if(!country){ fc.classList.add("bad"); ok=false; } else fc.classList.remove("bad");
-    if(!ok){ (digits.length!==9?input:document.getElementById("cselbtn")).focus(); return; }
+    if(!ok){ (digits.length!==9?input:document.querySelector("#csel .cselbtn")).focus(); return; }
 
     var pretty="A"+digits.slice(0,3)+"-"+digits.slice(3,6)+"-"+digits.slice(6);
     document.getElementById("g-anum").textContent=pretty;
-    document.getElementById("g-country").textContent=country;
-    var q="?a="+encodeURIComponent(digits)+"&c="+encodeURIComponent(country);
+    document.getElementById("g-country").textContent=country.charAt(0)+country.slice(1).toLowerCase();
+    var q="?a="+encodeURIComponent(digits)+"&c="+encodeURIComponent(country)+"&n="+encodeURIComponent(picker.code());
     document.getElementById("g-signup").href="signup.html"+q;
     document.getElementById("g-tg").href="signup.html"+q+"&via=tg";
     document.querySelector(".checkcard").classList.add("gated");

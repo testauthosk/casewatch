@@ -316,6 +316,144 @@ async function waTalk(m) {
     : WA_HELP);
 }
 
+/* ── проверки EOIR ──
+   Сами в суд не ходим: у бота на машине с мобильным прокси уже есть рабочий
+   движок, и второй такой же рядом только мешал бы — один IP, один браузер.
+   Поэтому очередь держим здесь, а работу забирает воркер и приносит ответ. */
+const CHECK_HOURS = Number(process.env.CHECK_HOURS || 12);
+
+function workerOk(req) {
+  const secret = process.env.WORKER_SECRET || '';
+  if (!secret) return false;
+  const given = String(req.headers['x-worker-secret'] || '');
+  return given.length === secret.length
+    && crypto.timingSafeEqual(Buffer.from(given), Buffer.from(secret));
+}
+
+const prettyA = (a) => (String(a).length === 9
+  ? 'A' + String(a).slice(0, 3) + '-' + String(a).slice(3, 6) + '-' + String(a).slice(6)
+  : String(a));
+
+/* Разброс во времени: без него все дела приходят на проверку одной пачкой. */
+const nextCheck = () => now() + Math.round(CHECK_HOURS * 3600 * (0.85 + Math.random() * 0.3));
+
+/* Разослать по всем каналам, которые человек оставил включёнными.
+   Почта включена по умолчанию: строки в channels может ещё не быть. */
+async function alertUser(u, m) {
+  const ch = {};
+  q.channels.all(u.id).forEach((c) => { ch[c.kind] = c; });
+  const lines = [m.title, '', m.lead, ''].concat(m.rows.map((r) => r[0] + ': ' + r[1]));
+
+  if (u.email && (!ch.email || ch.email.enabled)) {
+    mail.sendAlert(u.email, m).catch((e) => console.error('[alert] почта:', e.message));
+  }
+  if (u.tg_id && ch.telegram && ch.telegram.enabled) {
+    const token = process.env.TG_BOT_TOKEN || '';
+    if (token) {
+      fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ chat_id: u.tg_id, text: lines.join('\n'), disable_web_page_preview: true }),
+      }).catch((e) => console.error('[alert] телеграм:', e.message));
+    }
+  }
+  if (u.wa_phone && ch.whatsapp && ch.whatsapp.enabled) {
+    /* Meta пускает свободный текст только сутки после сообщения человека,
+       поэтому сперва утверждённый шаблон, а текстом — если шаблона ещё нет. */
+    const r = await wa.sendTemplate(u.wa_phone, [m.title, m.rows.map((x) => x[0] + ': ' + x[1]).join(', ')]);
+    if (!r.ok) await wa.sendText(u.wa_phone, lines.join('\n'));
+  }
+}
+
+/* Что именно изменилось — по этому решаем, будить человека или просто
+   записать в ленту дела. Слушание и решение будят, мелочь — нет. */
+function caseChanges(before, res) {
+  const out = [];
+  const was = (v) => String(v || '');
+  if (was(before.hearing_at) !== was(res.hearing)) {
+    if (!before.hearing_at && res.hearing) out.push({ kind: 'hearing', title: 'A hearing date appeared' });
+    else if (before.hearing_at && !res.hearing) out.push({ kind: 'hearing', title: 'The hearing was taken off the calendar' });
+    else out.push({ kind: 'hearing', title: 'The hearing was moved' });
+  }
+  if (was(before.decision) !== was(res.decision) && res.decision) {
+    out.push({ kind: 'decision', title: 'The judge decision changed' });
+  }
+  if (was(before.court) !== was(res.court) && before.court && res.court) {
+    out.push({ kind: 'court', title: 'The case moved to another court' });
+  }
+  return out;
+}
+
+/* Ответ воркера: сохранить, сравнить с прошлым снимком, разбудить кого надо. */
+async function applyResult(row, res) {
+  const u = q.userById.get(row.user_id);
+  const label = prettyA(row.a_number);
+
+  if (!res.ok) {
+    // не достучались — отступаем, но не бесконечно: полчаса, час, два… до шести
+    const back = Math.min(6 * 3600, 1800 * Math.pow(2, Math.min(4, row.fail_count || 0)));
+    q.setCaseFail.run(now() + back, row.id);
+    console.warn('[check] не вышло, дело', row.id, '—', res.error || 'без причины');
+    return { ok: false };
+  }
+
+  if (!res.found) {
+    const first = !row.checked_at;
+    q.setCaseResult.run('not_found', null, null, null, null, null, 'NOTFOUND', res.message || '', now(), nextCheck(), row.id);
+    if (first) q.addEvent.run(row.user_id, row.id, 'checked', 'Checked — EOIR has no record for ' + label + ' yet', now());
+    else if (row.status === 'found') q.addEvent.run(row.user_id, row.id, 'note', 'EOIR no longer returns this case', now());
+    return { ok: true, found: false };
+  }
+
+  const changes = row.checked_at ? caseChanges(row, res) : [];
+  const appeared = row.status === 'not_found' && res.found;
+  q.setCaseResult.run('found', res.name || null, res.court || null, res.hearing || null,
+    res.decision || null, res.judge || null, res.sig || null, (res.rendered || '').slice(0, 4000),
+    now(), nextCheck(), row.id);
+
+  const rows = [['Case', label]];
+  if (res.name) rows.push(['Name', res.name]);
+  rows.push(['Hearing', res.hearing || 'None scheduled yet']);
+  if (res.judge) rows.push(['Judge', res.judge]);
+  if (res.court) rows.push(['Court', res.court]);
+  rows.push(['Decision', res.decision || 'Pending']);
+
+  if (!row.checked_at) {
+    q.addEvent.run(row.user_id, row.id, 'checked', 'First check done — ' + (res.hearing
+      ? 'hearing ' + res.hearing : 'no hearing scheduled yet'), now());
+    return { ok: true, found: true, alerted: false };
+  }
+
+  if (appeared) changes.unshift({ kind: 'appeared', title: 'The case appeared in EOIR' });
+  if (!changes.length) {
+    if (res.sig && row.sig && res.sig !== row.sig) {
+      q.addEvent.run(row.user_id, row.id, 'note', 'Minor update on the EOIR page', now());
+    }
+    return { ok: true, found: true, alerted: false };
+  }
+
+  const prefs = q.prefs.get(row.user_id) || { hearing: 1, decision: 1, appeared: 1 };
+  let alerted = false;
+  for (const ch of changes) {
+    q.addEvent.run(row.user_id, row.id, ch.kind === 'decision' ? 'decision' : 'hearing', ch.title + ' — ' + label, now());
+    const wanted = ch.kind === 'decision' ? prefs.decision
+      : ch.kind === 'appeared' ? prefs.appeared : prefs.hearing;
+    if (!wanted || !u) continue;
+    await alertUser(u, {
+      subject: ch.title + ' — ' + (res.name || label),
+      title: ch.title,
+      lead: ch.kind === 'decision'
+        ? 'EOIR now shows a different decision on this case. Ask your attorney what it means for the next step.'
+        : ch.kind === 'appeared'
+          ? 'The number you were watching now has a record. Here is what the court publishes today.'
+          : 'The court schedule for this case changed. Confirm the date before you travel.',
+      rows,
+    }).catch((e) => console.error('[alert]', e.message));
+    alerted = true;
+  }
+  return { ok: true, found: true, alerted };
+}
+
 function readBody(req) {
   return new Promise((resolve) => {
     let raw = '';
@@ -691,12 +829,43 @@ async function api(req, res, url) {
     return send(res, 200, { ok: true, delivered });
   }
 
+  /* Воркер: забрать пачку дел и вернуть по ним ответ. Секрет общий, свой у
+     каждой машины смысла не имеет — воркер один и стоит рядом с ботом. */
+  if (url.startsWith('/api/worker/')) {
+    if (!workerOk(req)) return send(res, 403, { ok: false, error: 'bad secret' });
+
+    if (url === '/api/worker/queue' && req.method === 'GET') {
+      const want = Number(new URL(req.url, 'http://local').searchParams.get('limit')) || 5;
+      const limit = Math.max(1, Math.min(20, want));
+      const rows = q.dueCases.all(now(), now(), limit);
+      // бронируем на десять минут: воркер может спросить снова, пока возится
+      rows.forEach((r) => q.leaseCase.run(now() + 600, r.id));
+      return send(res, 200, { ok: true, cases: rows.map((r) => ({
+        id: r.id, aNumber: r.a_number, country: r.country, natCode: r.nat_code,
+        firstCheck: !r.checked_at,
+      })) });
+    }
+
+    if (url === '/api/worker/result' && req.method === 'POST') {
+      const b = (await readBody(req)) || {};
+      const row = q.caseRow.get(Number(b.id));
+      if (!row) return send(res, 404, { ok: false, error: 'no such case' });
+      const done = await applyResult(row, b);
+      return send(res, 200, Object.assign({ ok: true }, done));
+    }
+
+    return send(res, 404, { ok: false, error: 'unknown worker call' });
+  }
+
   if (url === '/api/cases' && req.method === 'POST') {
     if (!me) return send(res, 401, { ok: false, error: 'no session' });
     const b = await readBody(req);
     const a = String((b && b.aNumber) || '').replace(/\D/g, '');
     const c = String((b && b.country) || '').trim();
+    // код гражданства из списка ACIS: без него запрос в суд не сойдётся
+    const nat = String((b && b.natCode) || '').trim().toUpperCase();
     if (a.length !== 9 || !c) return send(res, 400, { ok: false, error: 'need 9 digits and country' });
+    if (!/^[A-Z]{2}$/.test(nat)) return send(res, 400, { ok: false, error: 'pick the country from the list' });
     if (q.caseByNumber.get(me.id, a)) return send(res, 409, { ok: false, error: 'already added' });
     const mine = q.countCases.get(me.id).n;
     if (me.plan === 'free' && mine >= 1) {
@@ -706,7 +875,7 @@ async function api(req, res, url) {
     if (mine >= MAX_CASES) {
       return send(res, 409, { ok: false, error: 'account limit', limit: MAX_CASES });
     }
-    q.addCase.run(me.id, a, c, now());
+    q.addCase.run(me.id, a, c, nat, now());
     const row = q.caseByNumber.get(me.id, a);
     q.addEvent.run(me.id, row.id, 'added', `Case A${a.slice(0, 3)}-${a.slice(3, 6)}-${a.slice(6)} added`, now());
     return send(res, 200, { ok: true, user: publicUser(me) });
@@ -826,7 +995,7 @@ function seedDemo() {
   for (const [a, c, st, name, court, hearing, decision, events] of samples) {
     let row = q.caseByNumber.get(u.id, a);
     if (!row) {
-      q.addCase.run(u.id, a, c, now());
+      q.addCase.run(u.id, a, c, null, now());   // у показательных дел гражданства нет: воркер их не трогает
       row = q.caseByNumber.get(u.id, a);
       db.prepare('UPDATE cases SET status=?, name=?, court=?, hearing_at=?, decision=?, checked_at=? WHERE id=?')
         .run(st, name, court, hearing, decision, now() - 600, row.id);

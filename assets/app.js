@@ -34,7 +34,9 @@
     var q = new URLSearchParams(location.search);
     var a = (q.get('a') || '').replace(/\D/g, '');
     var c = q.get('c') || '';
-    return a.length === 9 ? { aNumber: a, country: c } : null;
+    var n = (q.get('n') || '').toUpperCase();
+    // без кода гражданства дело в ACIS не найти — такой перенос отбрасываем
+    return a.length === 9 && /^[A-Z]{2}$/.test(n) ? { aNumber: a, country: c, natCode: n } : null;
   };
 
   CW.pretty = function (a) {
@@ -271,6 +273,114 @@
   /* Свой выпадающий список вместо системного: тот рисуется операционной
      системой и выбивается из оформления. Родной <select> остаётся в разметке
      скрытым — он держит значение, поэтому остальной код о подмене не знает. */
+  /* Выбор гражданства. Список у ACIS свой — 246 позиций и своя запись имён,
+     поэтому свободный ввод не годится: «Mexico» их поиск не понимает, нужен
+     ровно их вариант. Отсюда поиск по буквам и скрытые поля с кодом. */
+  CW.countryPicker = function (mount, placeholder) {
+    if (!mount || mount.dataset.ready) return null;
+    mount.dataset.ready = '1';
+    var all = window.CW_COUNTRIES || [];
+    var cur = -1;          // выбранная страна
+    var hot = 0;           // подсвеченная в списке
+
+    mount.classList.add('csel');
+    mount.innerHTML = '<button type="button" class="cselbtn">'
+      + '<span class="lb ph">' + (placeholder || 'Select country…') + '</span>'
+      + '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" '
+      + 'stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>'
+      + '<div class="cselopts" role="listbox"><div class="cselfind">'
+      + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">'
+      + '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>'
+      + '<input type="text" placeholder="Type to search" autocomplete="off" spellcheck="false"></div>'
+      + '<div class="colist"></div></div>'
+      + '<input type="hidden" class="cval"><input type="hidden" class="ccode">';
+
+    var btn = mount.querySelector('.cselbtn'), lab = mount.querySelector('.lb');
+    var box = mount.querySelector('.cselopts'), find = mount.querySelector('.cselfind input');
+    var list = mount.querySelector('.colist');
+    var val = mount.querySelector('.cval'), code = mount.querySelector('.ccode');
+
+    var tick = '<svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" '
+      + 'stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+
+    /* Показываем имена по-человечески: в списке ACIS они капсом. */
+    function nice(n) {
+      return n.toLowerCase().replace(/(^|[\s\-\(\/])([a-z])/g, function (m, a, b) { return a + b.toUpperCase(); });
+    }
+
+    var shown = [];
+    function draw(term) {
+      var t = (term || '').trim().toLowerCase();
+      shown = t ? all.filter(function (c) { return c[1].toLowerCase().indexOf(t) >= 0; }) : all;
+      hot = 0;
+      list.innerHTML = shown.length
+        ? shown.map(function (c, i) {
+          return '<div class="o' + (c[0] === code.value ? ' sel' : '') + (i === 0 ? ' hot' : '')
+            + '" role="option" data-c="' + c[0] + '"><span>' + nice(c[1]) + '</span>' + tick + '</div>';
+        }).join('')
+        : '<div class="cselnone">Nothing matches that</div>';
+    }
+
+    function pick(c) {
+      cur = c;
+      val.value = c[1]; code.value = c[0];
+      lab.textContent = nice(c[1]);
+      lab.classList.remove('ph');
+      mount.classList.remove('open');
+      mount.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    function move(step) {
+      var os = list.querySelectorAll('.o');
+      if (!os.length) return;
+      os[hot] && os[hot].classList.remove('hot');
+      hot = (hot + step + os.length) % os.length;
+      os[hot].classList.add('hot');
+      os[hot].scrollIntoView({ block: 'nearest' });
+    }
+
+    list.addEventListener('click', function (e) {
+      var o = e.target.closest('.o');
+      if (!o) return;
+      var c = shown.filter(function (x) { return x[0] === o.dataset.c; })[0];
+      if (c) pick(c);
+    });
+
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var open = mount.classList.toggle('open');
+      if (open) {
+        draw('');
+        find.value = '';
+        // на телефоне клавиатура поверх списка мешает больше, чем помогает
+        if (!matchMedia('(pointer: coarse)').matches) setTimeout(function () { find.focus(); }, 40);
+      }
+    });
+    find.addEventListener('input', function () { draw(this.value); });
+    find.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); move(1); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); move(-1); }
+      else if (e.key === 'Enter') { e.preventDefault(); if (shown[hot]) pick(shown[hot]); }
+      else if (e.key === 'Escape') mount.classList.remove('open');
+    });
+    box.addEventListener('click', function (e) { e.stopPropagation(); });
+    document.addEventListener('click', function () { mount.classList.remove('open'); });
+
+    return {
+      value: function () { return val.value; },
+      code: function () { return code.value; },
+      set: function (c) {
+        var hit = all.filter(function (x) { return x[0] === String(c || '').toUpperCase(); })[0];
+        if (hit) pick(hit);
+      },
+      clear: function () {
+        cur = -1; val.value = ''; code.value = '';
+        lab.textContent = placeholder || 'Select country…';
+        lab.classList.add('ph');
+      },
+    };
+  };
+
   CW.fancySelect = function (sel) {
     if (!sel || sel.dataset.fancy) return;
     sel.dataset.fancy = '1';

@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="assets/styles.css">
 <script defer src="assets/lang.js"></script>
 <script defer src="assets/theme.js"></script>
+<script defer src="assets/countries.js"></script>
 <script defer src="assets/app.js"></script>
 </head>
 <body>
@@ -94,8 +95,8 @@
       <input id="anum" class="mono" placeholder="240-974-400" inputmode="numeric" maxlength="13">
     </div>
     <div class="field" style="margin-top:12px;">
-      <label for="country">Country of citizenship</label>
-      <input id="country" placeholder="Mexico">
+      <label>Country of citizenship</label>
+      <div id="csel"></div>
     </div>
     <div class="ferr" id="addErr"></div>
     <div class="acts">
@@ -112,6 +113,7 @@
   window.addEventListener("DOMContentLoaded", function () {
     var box = document.getElementById("cases");
     var win = document.getElementById("addWin");
+    var picker = CW.countryPicker(document.getElementById("csel"));
 
     function badge(c) {
       if (c.status === "pending") return '<span class="badge badge-off"><span class="spin"></span> Checking…</span>';
@@ -206,11 +208,12 @@
     document.getElementById("addGo").addEventListener("click", function () {
       var btn = this, err = document.getElementById("addErr");
       var a = document.getElementById("anum").value.replace(/\D/g, "");
-      var c = document.getElementById("country").value.trim();
+      var c = picker.value();
       CW.err(err, "");
-      if (a.length !== 9 || !c) return CW.err(err, "Nine digits and the country, please.");
+      if (a.length !== 9) return CW.err(err, "Nine digits from the court notice, please.");
+      if (!c) return CW.err(err, "Pick the country of citizenship from the list.");
       CW.pending(btn, true, "Adding…");
-      CW.api("/api/cases", { aNumber: a, country: c }).then(function (r) {
+      CW.api("/api/cases", { aNumber: a, country: c, natCode: picker.code() }).then(function (r) {
         CW.pending(btn, false);
         if (r.status === 402) return CW.err(err, "The Free plan keeps one case. Turn on monitoring to add more.");
         if (r.status === 409 && r.data && r.data.error === "account limit")
@@ -218,7 +221,7 @@
         if (r.status === 409) return CW.err(err, "This case is already on your list.");
         if (r.status !== 200) return CW.err(err, "Could not add the case. Try again.");
         document.getElementById("anum").value = "";
-        document.getElementById("country").value = "";
+        picker.clear();
         win.classList.remove("on");
         render(r.data.user);
       });

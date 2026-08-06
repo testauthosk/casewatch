@@ -162,6 +162,17 @@ CREATE TABLE IF NOT EXISTS mail_log (
 try { db.exec("ALTER TABLE link_codes ADD COLUMN kind TEXT NOT NULL DEFAULT 'telegram'"); }
 catch (e) { /* колонка уже есть */ }
 
+/* Дела заводились, когда страна была просто текстом. ACIS же принимает свой
+   код гражданства, без него дело не найдётся — колонку добавляем на месте.
+   fail_count держит подряд неудачные проверки: по нему воркер отступает. */
+for (const sql of [
+  'ALTER TABLE cases ADD COLUMN nat_code TEXT',
+  'ALTER TABLE cases ADD COLUMN judge TEXT',
+  'ALTER TABLE cases ADD COLUMN rendered TEXT',
+  'ALTER TABLE cases ADD COLUMN fail_count INTEGER NOT NULL DEFAULT 0',
+  'ALTER TABLE cases ADD COLUMN next_check_at INTEGER',
+]) { try { db.exec(sql); } catch (e) { /* колонка уже есть */ } }
+
 const now = () => Math.floor(Date.now() / 1000);
 
 const q = {
@@ -192,7 +203,28 @@ const q = {
   cases: db.prepare('SELECT * FROM cases WHERE user_id = ? ORDER BY created_at DESC'),
   caseByNumber: db.prepare('SELECT * FROM cases WHERE user_id = ? AND a_number = ?'),
   addCase: db.prepare(
-    'INSERT INTO cases (user_id, a_number, country, created_at) VALUES (?, ?, ?, ?)'),
+    'INSERT INTO cases (user_id, a_number, country, nat_code, created_at) VALUES (?, ?, ?, ?, ?)'),
+
+  /* Очередь воркера: дело созрело, если время подошло, а у хозяина есть на что
+     смотреть — платный план либо самая первая, бесплатная проверка. Свежие
+     заводки идут вперёд: человек только что добавил дело и ждёт ответа. */
+  dueCases: db.prepare(
+    `SELECT c.id, c.a_number, c.country, c.nat_code, c.sig, c.status, c.checked_at, u.plan, u.plan_until
+       FROM cases c JOIN users u ON u.id = c.user_id
+      WHERE c.monitoring = 1 AND c.nat_code IS NOT NULL
+        AND (c.next_check_at IS NULL OR c.next_check_at <= ?)
+        AND (c.checked_at IS NULL OR (u.plan <> 'free' AND u.plan_until > ?))
+      ORDER BY c.checked_at IS NULL DESC, c.next_check_at IS NULL DESC, c.next_check_at
+      LIMIT ?`),
+  caseRow: db.prepare('SELECT * FROM cases WHERE id = ?'),
+  setCaseResult: db.prepare(
+    `UPDATE cases SET status = ?, name = COALESCE(?, name), court = ?, hearing_at = ?,
+       decision = ?, judge = ?, sig = ?, rendered = ?, checked_at = ?, next_check_at = ?,
+       fail_count = 0 WHERE id = ?`),
+  // бронь: взятое в работу не должно попасть в очередь второй раз
+  leaseCase: db.prepare('UPDATE cases SET next_check_at = ? WHERE id = ?'),
+  setCaseFail: db.prepare(
+    'UPDATE cases SET fail_count = fail_count + 1, next_check_at = ? WHERE id = ?'),
   setMonitoring: db.prepare('UPDATE cases SET monitoring = ? WHERE id = ? AND user_id = ?'),
   countCases: db.prepare('SELECT COUNT(*) AS n FROM cases WHERE user_id = ?'),
   caseById: db.prepare('SELECT * FROM cases WHERE id = ? AND user_id = ?'),
