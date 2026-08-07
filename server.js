@@ -763,8 +763,30 @@ async function api(req, res, url) {
         q.addEvent.run(row.user_id, null, 'note', 'Monitoring carried over from the Telegram bot', now());
       }
     }
+    /* Дела из бота переносим сюда же: человек, пришедший из телеграма, не должен
+       заводить их заново — он уже один раз всё вводил. Больше трёх не берём,
+       и чужой номер дела не трогаем, если такое уже заведено на сайте. */
+    let moved = 0;
+    for (const c of Array.isArray(b.cases) ? b.cases.slice(0, MAX_CASES) : []) {
+      const a = String(c.aNumber || '').replace(/\D/g, '');
+      const nat = String(c.natCode || '').trim().toUpperCase();
+      if (a.length !== 9 || !/^[A-Z]{2}$/.test(nat)) continue;
+      if (q.caseByNumber.get(row.user_id, a)) continue;
+      if (q.countCases.get(row.user_id).n >= MAX_CASES) break;
+      q.addCase.run(row.user_id, a, String(c.country || nat), nat, now());
+      const fresh = q.caseByNumber.get(row.user_id, a);
+      q.addEvent.run(row.user_id, fresh.id, 'added', 'Case A' + a.slice(0, 3) + '-' + a.slice(3, 6)
+        + '-' + a.slice(6) + ' brought over from the Telegram bot', now());
+      q.queueCase.run(fresh.id, row.user_id);      // сразу проверим своими силами
+      moved++;
+    }
+    if (moved) {
+      admin.event('📦', 'Дела перенесены из бота', [['Кто', (q.userById.get(row.user_id) || {}).email],
+        ['Сколько', String(moved)]]);
+    }
+
     const u = q.userById.get(row.user_id);
-    return send(res, 200, { ok: true, email: u ? u.email : null });
+    return send(res, 200, { ok: true, email: u ? u.email : null, cases: moved });
   }
 
   /* Зовёт будущий бот WhatsApp: код из сообщения плюс номер отправителя. */
