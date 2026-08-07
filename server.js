@@ -963,6 +963,38 @@ async function api(req, res, url) {
     /* Бот в телеграме живёт на другой машине и о своих событиях знает только
        сам. Пусть говорит о них сюда — а в админский чат всё уходит одним
        голосом, из одного места. */
+    /* Подписка — одна на человека, где бы он ни заплатил. Бот спрашивает сайт
+       перед тем как пустить проверку, и рассказывает сюда о своих оплатах.
+       Общей базы при этом нет намеренно: база бота лежит на машине с движком и
+       должна работать, даже когда сеть до нас лежит. */
+    if (url.startsWith('/api/worker/plan')) {
+      const tgId = Number(new URL(req.url, 'http://local').searchParams.get('tgId')
+        || (req.method === 'POST' ? 0 : 0)) || 0;
+
+      if (req.method === 'GET') {
+        const u = tgId ? q.userByTg.get(tgId) : null;
+        if (!u) return send(res, 200, { ok: true, linked: false });
+        return send(res, 200, {
+          ok: true, linked: true, email: u.email, plan: planNow(u),
+          planUntil: u.plan_until || null, freeCheck: freeCheckState(u),
+        });
+      }
+
+      if (req.method === 'POST') {
+        const b = (await readBody(req)) || {};
+        const u = q.userByTg.get(Number(b.tgId || 0));
+        if (!u) return send(res, 200, { ok: true, linked: false });
+        const until = Number(b.until || 0);
+        if (until > (u.plan_until || 0)) {
+          q.setPlan.run('monitoring', until, u.id);
+          q.addEvent.run(u.id, null, 'note', 'Monitoring extended by a payment in the Telegram bot', now());
+          admin.event('🔁', 'Оплата в боте перенесена на сайт', [['Кто', u.email],
+            ['Оплачено до', asDate(until)]]);
+        }
+        return send(res, 200, { ok: true, linked: true, planUntil: Math.max(until, u.plan_until || 0) });
+      }
+    }
+
     /* Снимок цифр телеграм-бота. Его база лежит на машине с движком, поэтому
        считает их воркер, а мы только храним последнее присланное. */
     if (url === '/api/worker/botstats' && req.method === 'POST') {
