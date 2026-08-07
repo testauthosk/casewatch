@@ -949,6 +949,11 @@ async function api(req, res, url) {
       return send(res, 200, { ok: true });
     }
 
+    // те же цифры, что и /stats в боте — чтобы смотреть, не заходя в телеграм
+    if (url === '/api/worker/stats' && req.method === 'GET') {
+      return send(res, 200, { ok: true, text: admin.stats().replace(/<[^>]+>/g, '') });
+    }
+
     // тот же список, что и команда /who в боте — чтобы смотреть, не заходя в телеграм
     if (url === '/api/worker/accounts' && req.method === 'GET') {
       return send(res, 200, { ok: true, text: admin.accounts().replace(/<[^>]+>/g, '') });
