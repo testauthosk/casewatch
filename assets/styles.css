@@ -914,3 +914,6 @@ header.scrolled{ box-shadow:0 10px 34px -20px rgba(16,30,56,.5); background:rgba
 .offer.nudge{ animation:onudge .9s var(--ease); }
 @keyframes onudge{ 0%{ transform:none; } 22%{ transform:translateY(-4px) scale(1.008); }
   55%{ transform:translateY(0) scale(1); } 100%{ transform:none; } }
+/* «скоро» — не цена: не должно выглядеть как то, что можно купить */
+.price-tag.soon{ background:var(--surface2); color:var(--muted); }
+.chan .act .btn[disabled]{ opacity:.5; cursor:default; }
