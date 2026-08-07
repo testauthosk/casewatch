@@ -148,6 +148,16 @@ CREATE TABLE IF NOT EXISTS payments (
 );
 CREATE INDEX IF NOT EXISTS idx_payments_ref ON payments(ref);
 
+/* Отметки «это письмо мы уже слали»: расписание крутится каждую минуту, и без
+   них человек получил бы напоминание об окончании подписки шестьдесят раз. */
+CREATE TABLE IF NOT EXISTS marks (
+  user_id INTEGER NOT NULL,          -- 0 = отметка самого сервиса, не человека
+  kind    TEXT NOT NULL,
+  mark    TEXT NOT NULL,
+  at      INTEGER NOT NULL,
+  PRIMARY KEY (user_id, kind, mark)
+);
+
 CREATE TABLE IF NOT EXISTS mail_log (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   email      TEXT NOT NULL,
@@ -172,6 +182,7 @@ for (const sql of [
   'ALTER TABLE cases ADD COLUMN fail_count INTEGER NOT NULL DEFAULT 0',
   'ALTER TABLE cases ADD COLUMN next_check_at INTEGER',
   'ALTER TABLE payments ADD COLUMN invoice TEXT',
+  'ALTER TABLE payments ADD COLUMN mailed INTEGER NOT NULL DEFAULT 0',
 ]) { try { db.exec(sql); } catch (e) { /* колонка уже есть */ } }
 
 const now = () => Math.floor(Date.now() / 1000);
@@ -287,11 +298,24 @@ const q = {
   // ссылка на инвойс приходит отдельным событием, позже самой оплаты
   setInvoice: db.prepare(
     'UPDATE payments SET invoice = ? WHERE id = (SELECT id FROM payments WHERE ref = ? ORDER BY id DESC LIMIT 1)'),
+  markMailed: db.prepare('UPDATE payments SET mailed = 1 WHERE id = ?'),
+  /* Письмо об оплате ждёт счёт: он приходит отдельным событием секундами позже.
+     Если счёт так и не пришёл — отправляем без него, но не молчим. */
+  unmailedPayments: db.prepare(
+    'SELECT * FROM payments WHERE mailed = 0 AND created_at < ? ORDER BY id LIMIT 20'),
   // тот же платёж Stripe присылает дважды (сессия и счёт) — второй раз не начисляем
   paidRecently: db.prepare(
-    'SELECT id, user_id FROM payments WHERE ref = ? AND created_at > ? ORDER BY id DESC LIMIT 1'),
+    'SELECT * FROM payments WHERE ref = ? AND created_at > ? ORDER BY id DESC LIMIT 1'),
   userByPaymentRef: db.prepare(
     'SELECT user_id FROM payments WHERE ref = ? AND user_id IS NOT NULL ORDER BY id DESC LIMIT 1'),
+
+  // INSERT OR IGNORE: changes = 1 значит отметки ещё не было и письмо нужно слать
+  addMark: db.prepare('INSERT OR IGNORE INTO marks (user_id, kind, mark, at) VALUES (?, ?, ?, ?)'),
+  expiringSoon: db.prepare(
+    "SELECT * FROM users WHERE plan <> 'free' AND plan_until BETWEEN ? AND ? AND email IS NOT NULL"),
+  weeklyWanted: db.prepare(
+    `SELECT u.* FROM users u JOIN prefs p ON p.user_id = u.id
+      WHERE p.weekly = 1 AND u.email_ok = 1 AND u.email IS NOT NULL`),
 
   logMail: db.prepare(
     'INSERT INTO mail_log (email, kind, ok, detail, created_at) VALUES (?, ?, ?, ?, ?)'),

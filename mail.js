@@ -187,7 +187,26 @@ function supportAckHtml(topic) {
     + small('If something changes in your case meanwhile, the alerts keep working as usual.'));
 }
 
-async function send(to, subject, html, kind, text) {
+/* Счёт кладём в письмо файлом: так делают все платёжные сервисы, и человеку
+   не нужно никуда ходить, чтобы отчитаться за расход. Ссылка при этом
+   остаётся в тексте — на случай если вложение срежет почтовый фильтр.
+   PDF у Stripe лежит по секретному адресу, ключи для скачивания не нужны. */
+async function fetchPdf(url) {
+  if (!url) return null;
+  try {
+    const r = await fetch(url, { redirect: 'follow' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const buf = Buffer.from(await r.arrayBuffer());
+    // письмо не должно раздуваться: счёт на пару страниц весит десятки килобайт
+    if (buf.length > 3 * 1024 * 1024) throw new Error('слишком большой: ' + buf.length);
+    return buf.toString('base64');
+  } catch (e) {
+    console.error('[mail] счёт не скачался:', e.message);
+    return null;
+  }
+}
+
+async function send(to, subject, html, kind, text, files) {
   if (!KEY) {
     console.warn('[mail] RESEND_API_KEY не задан — письмо не отправлено:', kind, to);
     q.logMail.run(to, kind, 0, 'no api key', now());
@@ -196,6 +215,7 @@ async function send(to, subject, html, kind, text) {
   try {
     const payload = { from: FROM, to: [to], subject, html };
     if (text) payload.text = text;
+    if (files && files.length) payload.attachments = files;
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { authorization: 'Bearer ' + KEY, 'content-type': 'application/json' },
@@ -240,10 +260,13 @@ function sendWeekly(to, items) {
     plain('Your week on CaseCheck', (items || []).map(function (i) { return i.name + ': ' + i.state; })));
 }
 
-function sendPaid(to, plan, amount, until, invoice) {
+async function sendPaid(to, plan, amount, until, invoice, pdf) {
+  const file = await fetchPdf(pdf);
+  const stamp = new Date().toISOString().slice(0, 10);
   return send(to, 'Monitoring is on · CaseCheck', paidHtml(plan, amount, until, invoice), 'paid',
     plain('Monitoring is on', ['Plan: ' + plan, 'Amount: $' + amount, 'Paid until: ' + until]
-      .concat(invoice ? ['Invoice: ' + invoice] : [])));
+      .concat(invoice ? ['Invoice: ' + invoice] : [])),
+    file ? [{ filename: 'CaseCheck-invoice-' + stamp + '.pdf', content: file }] : null);
 }
 
 function sendExpiring(to, until) {

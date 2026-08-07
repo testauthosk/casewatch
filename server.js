@@ -12,6 +12,8 @@ const { db, q, now } = require('./db');
 const mail = require('./mail');
 const oauth = require('./oauth');
 const wa = require('./whatsapp');
+const admin = require('./admin');
+const jobs = require('./jobs');
 
 const ROOT = __dirname;
 const PORT = process.env.PORT || 3000;
@@ -126,10 +128,26 @@ const asDate = (ts) => new Date(ts * 1000).toLocaleDateString('en-US',
 /* Оплата принята. Продление считаем от текущего срока, а не от сегодня, иначе
    ранний платёж съедал бы остаток оплаченного. Ссылку на счёт Stripe шлёт
    отдельным событием, поэтому она может прийти и позже — тогда допишем. */
-function grantPlan(userId, plan, amount, currency, ref, invoice) {
+/* Письмо об оплате со счётом внутри. Зовётся и сразу после платежа, и позже,
+   когда Stripe пришлёт документ, — поэтому помечаем строку, чтобы человек не
+   получил два одинаковых письма. */
+function mailPaid(pay, invoice, pdf) {
+  const u = q.userById.get(pay.user_id);
+  if (!u || !u.email) return;
+  q.markMailed.run(pay.id);
+  const until = (q.userById.get(pay.user_id) || {}).plan_until || now();
+  mail.sendPaid(u.email, pay.plan, Number(pay.amount).toFixed(2), asDate(until),
+    invoice || pay.invoice || '', pdf || '')
+    .catch((e) => console.error('[stripe] письмо об оплате:', e.message));
+}
+
+function grantPlan(userId, plan, amount, currency, ref, invoice, pdf) {
   // тот же платёж приходит и сессией, и счётом: второй раз не начисляем
-  if (ref && q.paidRecently.get(String(ref), now() - 900)) {
+  const twin = ref ? q.paidRecently.get(String(ref), now() - 900) : null;
+  if (twin) {
     if (invoice) q.setInvoice.run(invoice, String(ref));
+    // счёт догнал оплату — теперь письмо можно отправить, уже с документом
+    if (!twin.mailed) mailPaid(twin, invoice, pdf);
     return false;
   }
   const u = q.userById.get(userId) || {};
@@ -139,10 +157,12 @@ function grantPlan(userId, plan, amount, currency, ref, invoice) {
   q.addPayment.run(userId, (amount || 0) / 100, String(currency || 'usd').toUpperCase(),
     plan, 'stripe', ref || null, invoice || null, now());
   q.addEvent.run(userId, null, 'note', 'Monitoring turned on — ' + (plan === 'year' ? 'yearly' : 'monthly') + ' plan', now());
-  if (u.email) {
-    mail.sendPaid(u.email, plan, ((amount || 0) / 100).toFixed(2), asDate(until), invoice || '')
-      .catch((e) => console.error('[stripe] письмо об оплате:', e.message));
-  }
+  /* Со счётом на руках пишем сразу; без него ждём событие о счёте, а если оно
+     не придёт — письмо всё равно уйдёт, его подберёт расписание. */
+  const pay = q.paidRecently.get(String(ref || ''), now() - 60);
+  if (pay && (invoice || !ref)) mailPaid(pay, invoice, pdf);
+  admin.event('💸', 'Оплата', [['Кто', u.email], ['План', plan === 'year' ? 'год' : 'месяц'],
+    ['Сумма', '$' + ((amount || 0) / 100).toFixed(2)], ['Оплачено до', asDate(until)]]);
   return true;
 }
 
@@ -270,6 +290,7 @@ function linkWhatsapp(code, phone) {
   q.useLink.run(row.token);
   q.addEvent.run(row.user_id, null, 'note', 'WhatsApp connected', now());
   const u = q.userById.get(row.user_id);
+  admin.event('🔗', 'WhatsApp привязан к аккаунту', [['Кто', u && u.email], ['Номер', digits]]);
   return { ok: true, email: u ? u.email : null, userId: row.user_id };
 }
 
@@ -420,6 +441,11 @@ async function applyResult(row, res) {
     // не достучались — отступаем, но не бесконечно: полчаса, час, два… до шести
     const back = Math.min(6 * 3600, 1800 * Math.pow(2, Math.min(4, row.fail_count || 0)));
     q.setCaseFail.run(now() + back, row.id);
+    // три сбоя подряд — это уже не случайность, а повод посмотреть руками
+    if ((row.fail_count || 0) + 1 === 3) {
+      admin.event('⚠️', 'Дело не проверяется', [['Дело', label],
+        ['Кто', (q.userById.get(row.user_id) || {}).email], ['Причина', res.error || 'без причины']]);
+    }
     console.warn('[check] не вышло, дело', row.id, '—', res.error || 'без причины');
     return { ok: false };
   }
@@ -478,6 +504,8 @@ async function applyResult(row, res) {
     }).catch((e) => console.error('[alert]', e.message));
     alerted = true;
   }
+  if (alerted) admin.event('🔔', 'Изменение в деле', [['Кто', u && u.email], ['Дело', label],
+    ['Что', changes.map((c) => c.title).join('; ')], ['Слушание', res.hearing || 'нет']]);
   return { ok: true, found: true, alerted };
 }
 
@@ -544,6 +572,7 @@ async function api(req, res, url) {
       q.upsertChannel.run(u.id, 'email', 1, email, 1);
       q.addEvent.run(u.id, null, 'note', 'Account created', now());
       mail.sendWelcome(u.email).catch(() => {});   // первое письмо: что делать дальше
+      admin.event('🎉', 'Регистрация на сайте', [['Почта', u.email], ['Способ', 'почта и пароль']]);
     }
     setSession(res, u.id, req.headers['user-agent']);
     return send(res, 200, { ok: true, user: publicUser(q.userByEmail.get(email)) });
@@ -656,8 +685,9 @@ async function api(req, res, url) {
       q.upsertChannel.run(u.id, 'email', r.private ? 0 : 1, r.email, 1);
       q.addEvent.run(u.id, null, 'note', 'Account created with ' + provider, now());
       mail.sendWelcome(u.email).catch(() => {});
+      admin.event('🎉', 'Регистрация на сайте', [['Почта', u.email],
+        ['Способ', provider === 'apple' ? 'Apple' : 'Google']]);
     }
-
     q.linkIdentity.run(provider, r.sub, u.id, r.email || null, r.private ? 1 : 0, r.name || null, now(), now());
     q.touchIdentity.run(now(), provider, r.sub);
     if (r.verified) q.markVerified.run(u.id);
@@ -699,6 +729,8 @@ async function api(req, res, url) {
     q.upsertChannel.run(row.user_id, 'telegram', 1, String(b.username || '') || String(tgId), 1);
     q.useLink.run(row.token);
     q.addEvent.run(row.user_id, null, 'note', 'Telegram connected', now());
+    admin.event('🔗', 'Телеграм привязан к аккаунту', [['Кто', (q.userById.get(row.user_id) || {}).email],
+      ['Телеграм', String(b.username || tgId)]]);
 
     /* Подписка, купленная в боте, не должна теряться на сайте: если у бота срок
        дальше нашего, продлеваем. Наоборот сайт ничего не отнимает. */
@@ -853,6 +885,8 @@ async function api(req, res, url) {
     q.addTicket.run(me.id, me.email, topic || null, text, 0, now());
     const id = db.prepare('SELECT last_insert_rowid() AS id').get().id;
     const delivered = await tellSupport(id, me.email, topic, text);
+    admin.event('🆘', 'Обращение в поддержку', [['Кто', me.email], ['Тема', topic || '—'],
+      ['Текст', String(text).slice(0, 300)]]);
     mail.sendSupportAck(me.email, topic).catch(() => {});   // человеку — подтверждение
     // ответ всегда «принято»: обращение уже в базе, доставку добираем сами
     return send(res, 200, { ok: true, delivered });
@@ -883,6 +917,16 @@ async function api(req, res, url) {
       return send(res, 200, Object.assign({ ok: true }, done));
     }
 
+    /* Бот в телеграме живёт на другой машине и о своих событиях знает только
+       сам. Пусть говорит о них сюда — а в админский чат всё уходит одним
+       голосом, из одного места. */
+    if (url === '/api/worker/notify' && req.method === 'POST') {
+      const b = (await readBody(req)) || {};
+      admin.event(String(b.icon || '🤖').slice(0, 4), String(b.title || 'Событие бота').slice(0, 120),
+        Array.isArray(b.rows) ? b.rows.slice(0, 8).map((r) => [String(r[0]).slice(0, 40), String(r[1]).slice(0, 300)]) : []);
+      return send(res, 200, { ok: true });
+    }
+
     return send(res, 404, { ok: false, error: 'unknown worker call' });
   }
 
@@ -907,6 +951,8 @@ async function api(req, res, url) {
     q.addCase.run(me.id, a, c, nat, now());
     const row = q.caseByNumber.get(me.id, a);
     q.addEvent.run(me.id, row.id, 'added', `Case A${a.slice(0, 3)}-${a.slice(3, 6)}-${a.slice(6)} added`, now());
+    admin.event('📄', 'Новое дело', [['Кто', me.email], ['Дело', prettyA(a)], ['Гражданство', c],
+      ['План', planNow(me) === 'free' ? 'бесплатный' : 'платный']]);
     return send(res, 200, { ok: true, user: publicUser(me) });
   }
 
@@ -1080,9 +1126,10 @@ http.createServer((req, res) => {
              продление начисляем здесь. Повтор отсекает сам grantPlan. */
           const ref = String(o.subscription || '');
           const link = o.hosted_invoice_url || o.invoice_pdf || '';
+          const pdf = o.invoice_pdf || '';
           const row = ref ? q.userByPaymentRef.get(ref) : null;
           if (row) {
-            const fresh = grantPlan(row.user_id, planFromCents(o.amount_paid), o.amount_paid, o.currency, ref, link);
+            const fresh = grantPlan(row.user_id, planFromCents(o.amount_paid), o.amount_paid, o.currency, ref, link, pdf);
             if (!fresh && link) q.setInvoice.run(link, ref);
             console.log('[stripe] счёт', o.billing_reason || '', fresh ? '— продлили' : '— ссылка сохранена');
           } else if (link) {
@@ -1136,5 +1183,7 @@ http.createServer((req, res) => {
   serveStatic(req, res);
 }).listen(PORT, () => {
   try { seedDemo(); } catch (e) { console.error('[demo]', e.message); }
+  jobs.start({ mailPaid });
+  admin.listen().catch((e) => console.error('[admin]', e.message));
   console.log('CaseCheck on :' + PORT, '| почта:', mail.hasKey() ? 'Resend подключён' : 'ключа нет, коды в логе');
 });
