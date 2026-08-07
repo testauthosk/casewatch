@@ -154,6 +154,30 @@ async def _one(engine, case):
     }
 
 
+def bot_numbers():
+    """Цифры из базы бота. Сайт их сам не видит: база лежит здесь, на машине
+    с движком, поэтому считаем на месте и отдаём готовыми."""
+    import sqlite3
+    import time as _t
+    db = sqlite3.connect(config.DB_PATH)
+    one = lambda sql, *a: (db.execute(sql, a).fetchone() or [0])[0] or 0   # noqa: E731
+    now_ts = int(_t.time())
+    ym = _t.strftime("%Y-%m", _t.gmtime(now_ts))
+    try:
+        return {
+            "users": one("SELECT COUNT(*) FROM users"),
+            "usersDay": one("SELECT COUNT(*) FROM users WHERE created_at > ?", now_ts - 86400),
+            "subs": one("SELECT COUNT(*) FROM subs WHERE expires_at > ?", now_ts),
+            "money30": one("SELECT COALESCE(SUM(amount),0) FROM payments WHERE created_at > ?", now_ts - 30 * 86400),
+            "moneyAll": one("SELECT COALESCE(SUM(amount),0) FROM payments"),
+            "cases": one("SELECT COUNT(*) FROM cases"),
+            "watched": one("SELECT COUNT(*) FROM cases WHERE monitoring = 1"),
+            "freeMonth": one("SELECT COUNT(*) FROM free_checks WHERE ym = ? AND used > 0", ym),
+        }
+    finally:
+        db.close()
+
+
 async def run_site_worker(engine):
     """Вечный цикл. Молчит, если сайт не настроен — бот от этого не страдает."""
     if not SECRET:
@@ -164,6 +188,12 @@ async def run_site_worker(engine):
 
     while True:
         try:
+            # снимок цифр бота: сайту он нужен, чтобы показывать оба канала в одном месте
+            try:
+                await asyncio.to_thread(_call, "/api/worker/botstats", bot_numbers())
+            except Exception as e:                           # noqa: BLE001
+                log.debug("site: цифры бота не ушли: %s", e)
+
             got = await asyncio.to_thread(_call, "/api/worker/queue?limit=%d" % BATCH)
             cases = got.get("cases") or []
             if cases:

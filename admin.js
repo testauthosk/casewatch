@@ -87,12 +87,29 @@ const count = {
 
 const money = (v) => '$' + Number(v || 0).toFixed(2);
 
+/* Цифры телеграм-бота. Его база на другой машине, поэтому здесь лежит
+   присланный воркером снимок — и мы честно пишем, когда он снят. */
+function botLines() {
+  const row = q.getKv.get('botstats');
+  if (!row) return ['', '<b>Телеграм-бот</b>', '\u00b7 цифр пока нет: воркер ещё не присылал снимок'];
+  let b = {};
+  try { b = JSON.parse(row.value) || {}; } catch (e) { return ['', '<b>Телеграм-бот</b>', '\u00b7 снимок не читается']; }
+  const mins = Math.round((now() - row.at) / 60);
+  const when = mins < 2 ? 'только что' : mins < 90 ? mins + ' мин назад' : Math.round(mins / 60) + ' ч назад';
+  return ['', '<b>Телеграм-бот</b> <i>(снимок ' + when + ')</i>',
+    '\u00b7 людей: ' + (b.users || 0) + ', пришли за сутки: ' + (b.usersDay || 0),
+    '\u00b7 платят сейчас: ' + (b.subs || 0) + ' \u00b7 за 30 дней: ' + money(b.money30 || 0)
+      + ' \u00b7 всего: ' + money(b.moneyAll || 0),
+    '\u00b7 дел: ' + (b.cases || 0) + ', под наблюдением: ' + (b.watched || 0),
+    '\u00b7 бесплатных проверок в этом месяце: ' + (b.freeMonth || 0)];
+}
+
 function stats() {
   const t = now(), day = 86400;
   return [
     '📊 <b>CaseCheck — цифры</b>',
     '',
-    '<b>Люди</b>',
+    '<b>Сайт — люди</b>',
     '· всего аккаунтов: ' + count.users() + ' (подтвердили почту ' + count.verified() + ')',
     '· пришли за сутки: ' + count.usersSince(t - day) + ', за неделю: ' + count.usersSince(t - 7 * day),
     '· телеграм привязан: ' + count.tg() + ' · WhatsApp: ' + count.wa(),
@@ -112,7 +129,7 @@ function stats() {
     '· писем за сутки: ' + count.mailsSince(t - day)
       + (count.mailFailsSince(t - day) ? ' (не ушло ' + count.mailFailsSince(t - day) + ')' : ''),
     '· обращений за сутки: ' + count.ticketsSince(t - day),
-  ].filter((l) => l !== null).join('\n');   // пустые строки — отбивка между разделами
+  ].concat(botLines()).filter((l) => l !== null).join('\n');   // пустые строки — отбивка между разделами
 }
 
 /* Утренняя сводка: то же самое, но за прошедшие сутки и без воды. */

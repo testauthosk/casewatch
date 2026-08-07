@@ -158,6 +158,15 @@ CREATE TABLE IF NOT EXISTS marks (
   PRIMARY KEY (user_id, kind, mark)
 );
 
+/* Мелкие значения, которые незачем разносить по таблицам: сюда воркер кладёт
+   снимок цифр телеграм-бота — его база живёт на другой машине, и по-другому
+   мы бы её не увидели. */
+CREATE TABLE IF NOT EXISTS kv (
+  key   TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  at    INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS mail_log (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   email      TEXT NOT NULL,
@@ -321,6 +330,11 @@ const q = {
   weeklyWanted: db.prepare(
     `SELECT u.* FROM users u JOIN prefs p ON p.user_id = u.id
       WHERE p.weekly = 1 AND u.email_ok = 1 AND u.email IS NOT NULL`),
+
+  setKv: db.prepare(
+    `INSERT INTO kv (key, value, at) VALUES (?, ?, ?)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value, at = excluded.at`),
+  getKv: db.prepare('SELECT value, at FROM kv WHERE key = ?'),
 
   logMail: db.prepare(
     'INSERT INTO mail_log (email, kind, ok, detail, created_at) VALUES (?, ?, ?, ?, ?)'),

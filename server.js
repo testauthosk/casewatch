@@ -941,6 +941,14 @@ async function api(req, res, url) {
     /* Бот в телеграме живёт на другой машине и о своих событиях знает только
        сам. Пусть говорит о них сюда — а в админский чат всё уходит одним
        голосом, из одного места. */
+    /* Снимок цифр телеграм-бота. Его база лежит на машине с движком, поэтому
+       считает их воркер, а мы только храним последнее присланное. */
+    if (url === '/api/worker/botstats' && req.method === 'POST') {
+      const b = (await readBody(req)) || {};
+      q.setKv.run('botstats', JSON.stringify(b), now());
+      return send(res, 200, { ok: true });
+    }
+
     // тот же список, что и команда /who в боте — чтобы смотреть, не заходя в телеграм
     if (url === '/api/worker/accounts' && req.method === 'GET') {
       return send(res, 200, { ok: true, text: admin.accounts().replace(/<[^>]+>/g, '') });
