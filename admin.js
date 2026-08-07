@@ -148,6 +148,32 @@ function feed() {
   }).join('\n');
 }
 
+/* Кто вообще есть в базе: цифры в /stats отвечают «сколько», а этот список —
+   «кто именно». Без него любой вопрос про число дел упирается в базу. */
+const accountsQ = db.prepare(
+  `SELECT u.id, u.email, u.plan, u.plan_until, u.tg_id, u.created_at,
+          (SELECT COUNT(*) FROM cases c WHERE c.user_id = u.id) AS cases,
+          (SELECT COUNT(*) FROM cases c WHERE c.user_id = u.id AND c.monitoring = 1) AS watched
+     FROM users u ORDER BY u.id`);
+
+function accounts() {
+  const rows = accountsQ.all();
+  if (!rows.length) return 'В базе пока никого.';
+  const t = now();
+  const lines = rows.map((r) => {
+    const paid = r.plan !== 'free' && (r.plan_until || 0) > t;
+    return '· ' + esc(r.email || ('id ' + r.id)) + ' — дел ' + r.cases
+      + (r.watched !== r.cases ? ' (под наблюдением ' + r.watched + ')' : '')
+      + ' · ' + (paid ? 'платит до ' + new Date(r.plan_until * 1000).toISOString().slice(0, 10) : 'бесплатный')
+      + (r.tg_id ? ' · телеграм привязан' : '');
+  });
+  const cases = rows.reduce((n, r) => n + r.cases, 0);
+  const nl = String.fromCharCode(10);
+  return '👥 <b>Аккаунты сайта</b> — ' + rows.length + ', дел ' + cases + nl + nl
+    + lines.join(nl) + nl + nl
+    + '<i>Это база сайта. Подписчики телеграм-бота живут отдельно, пока не привяжут аккаунт.</i>';
+}
+
 /* ── команды ── */
 const HELP = [
   '🤖 <b>Админский бот CaseCheck</b>',
@@ -157,6 +183,7 @@ const HELP = [
   '/stats — полные цифры',
   '/today — что было за сутки',
   '/feed — последние события',
+  '/who — кто зарегистрирован и сколько у кого дел',
   '/ping — проверить, что сайт жив',
 ].join('\n');
 
@@ -165,6 +192,7 @@ async function answer(chatId, text) {
   if (cmd === '/stats') return tell(stats(), [chatId]);
   if (cmd === '/today') return tell(digest(), [chatId]);
   if (cmd === '/feed') return tell(feed(), [chatId]);
+  if (cmd === '/who') return tell(accounts(), [chatId]);
   if (cmd === '/ping') return tell('🟢 Сайт на связи. Аптайм процесса: '
     + Math.round(process.uptime() / 60) + ' мин.', [chatId]);
   return tell(HELP, [chatId]);
@@ -178,6 +206,7 @@ async function setupMenu() {
     { command: 'stats', description: 'Полные цифры сервиса' },
     { command: 'today', description: 'Что было за сутки' },
     { command: 'feed', description: 'Лента последних событий' },
+    { command: 'who', description: 'Кто зарегистрирован и с чем' },
     { command: 'ping', description: 'Жив ли сайт' },
   ];
   await api('deleteMyCommands', { scope: { type: 'default' } });
@@ -226,4 +255,4 @@ async function listen() {
   }
 }
 
-module.exports = { on, tell, event, stats, digest, feed, listen, setupMenu };
+module.exports = { on, tell, event, stats, digest, feed, accounts, listen, setupMenu };
