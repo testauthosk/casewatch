@@ -24,7 +24,7 @@ async function api(method, body) {
     const base = process.env.TG_API_BASE || 'https://api.telegram.org';
     const r = await fetch(base + '/bot' + TOKEN() + '/' + method, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json; charset=utf-8' },
       body: JSON.stringify(body),
     });
     return await r.json().catch(() => ({ ok: false }));
@@ -161,12 +161,27 @@ async function answer(chatId, text) {
   return tell(HELP, [chatId]);
 }
 
+/* Кнопки команд в меню бота: телеграм рисует их сам, если список ему задать.
+   Ставим при каждом запуске — так список всегда совпадает с кодом. */
+async function setupMenu() {
+  const commands = [
+    { command: 'stats', description: 'Полные цифры сервиса' },
+    { command: 'today', description: 'Что было за сутки' },
+    { command: 'feed', description: 'Лента последних событий' },
+    { command: 'ping', description: 'Жив ли сайт' },
+  ];
+  const r = await api('setMyCommands', { commands });
+  await api('setChatMenuButton', { menu_button: { type: 'commands' } });
+  console.log('[admin] меню команд:', r && r.ok ? 'выставлено' : 'не вышло');
+}
+
 /* Долгий опрос. Своего веб-хука не заводим: он потребовал бы отдельного пути
    наружу, а бот тут служебный — лишняя дверь ни к чему. */
 async function listen() {
   if (!on()) return console.log('[admin] бот выключен: нет токена или чата');
   const allowed = new Set(CHATS().map(String));
   let offset = 0;
+  await setupMenu();
   console.log('[admin] бот на связи, чатов:', allowed.size);
   for (;;) {
     try {
@@ -188,4 +203,4 @@ async function listen() {
   }
 }
 
-module.exports = { on, tell, event, stats, digest, feed, listen };
+module.exports = { on, tell, event, stats, digest, feed, listen, setupMenu };

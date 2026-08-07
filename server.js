@@ -188,7 +188,7 @@ async function tellSupport(ticketId, from, topic, text) {
     try {
       const r = await fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json; charset=utf-8' },
         body: JSON.stringify({ chat_id: chat, text: body, parse_mode: 'HTML' }),
       });
       ok = r.ok;
@@ -400,7 +400,7 @@ async function alertUser(u, m) {
     if (token) {
       fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json; charset=utf-8' },
         body: JSON.stringify({ chat_id: u.tg_id, text: lines.join('\n'), disable_web_page_preview: true }),
       }).catch((e) => console.error('[alert] телеграм:', e.message));
     }
