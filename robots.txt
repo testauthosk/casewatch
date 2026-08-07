@@ -1,0 +1,14 @@
+# CaseCheck
+User-agent: *
+Allow: /
+# личные страницы в поиске не нужны
+Disallow: /app.html
+Disallow: /case.html
+Disallow: /alerts.html
+Disallow: /billing.html
+Disallow: /profile.html
+Disallow: /support.html
+Disallow: /forgot.html
+Disallow: /api/
+
+Sitemap: https://uscasecheck.com/sitemap.xml
