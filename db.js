@@ -181,6 +181,7 @@ for (const sql of [
   'ALTER TABLE cases ADD COLUMN rendered TEXT',
   'ALTER TABLE cases ADD COLUMN fail_count INTEGER NOT NULL DEFAULT 0',
   'ALTER TABLE cases ADD COLUMN next_check_at INTEGER',
+  'ALTER TABLE cases ADD COLUMN queued INTEGER NOT NULL DEFAULT 0',
   'ALTER TABLE payments ADD COLUMN invoice TEXT',
   'ALTER TABLE payments ADD COLUMN mailed INTEGER NOT NULL DEFAULT 0',
 ]) { try { db.exec(sql); } catch (e) { /* колонка уже есть */ } }
@@ -223,11 +224,15 @@ const q = {
   dueCases: db.prepare(
     `SELECT c.id, c.a_number, c.country, c.nat_code, c.sig, c.status, c.checked_at, u.plan, u.plan_until
        FROM cases c JOIN users u ON u.id = c.user_id
-      WHERE c.monitoring = 1 AND c.nat_code IS NOT NULL
+      WHERE c.nat_code IS NOT NULL
         AND (c.next_check_at IS NULL OR c.next_check_at <= ?)
-        AND (c.checked_at IS NULL OR (u.plan <> 'free' AND u.plan_until > ?))
-      ORDER BY c.checked_at IS NULL DESC, c.next_check_at IS NULL DESC, c.next_check_at
+        AND (c.queued = 1                                        -- человек попросил проверить
+             OR (c.monitoring = 1 AND u.plan <> 'free' AND u.plan_until > ?))
+      ORDER BY c.queued DESC, c.checked_at IS NULL DESC, c.next_check_at IS NULL DESC, c.next_check_at
       LIMIT ?`),
+  queueCase: db.prepare('UPDATE cases SET queued = 1, next_check_at = NULL WHERE id = ? AND user_id = ?'),
+  unqueueCase: db.prepare('UPDATE cases SET queued = 0 WHERE id = ?'),
+  usedMark: db.prepare('SELECT at FROM marks WHERE user_id = ? AND kind = ? AND mark = ?'),
   caseRow: db.prepare('SELECT * FROM cases WHERE id = ?'),
   setCaseResult: db.prepare(
     `UPDATE cases SET status = ?, name = COALESCE(?, name), court = ?, hearing_at = ?,

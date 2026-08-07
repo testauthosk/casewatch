@@ -70,6 +70,41 @@
 
     <dl class="facts" id="facts"></dl>
 
+    <div class="offer" id="offer" hidden>
+      <div class="glow" aria-hidden="true"></div>
+      <div class="ohead">
+        <span class="pulse" aria-hidden="true"><i></i></span>
+        <div>
+          <h3>This is a snapshot. Cases move.</h3>
+          <p>What you see above is true right now. Immigration courts reschedule hearings and enter decisions without telling anyone — people find out when the letter arrives, or later.</p>
+        </div>
+      </div>
+
+      <ul class="owhat">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> A hearing date appears or moves</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> The judge enters a decision</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> The case moves to another court</li>
+      </ul>
+
+      <p class="ohow">We re-check this case every 12 hours and write you the same minute — by email, in Telegram or on WhatsApp. Up to three cases on one account.</p>
+
+      <div class="obuy">
+        <button type="button" class="btn btn-primary" data-plan="month">Turn on watching — $9.99 / month</button>
+        <button type="button" class="btn btn-navy" data-plan="year">$75 for a year <span>save 37%</span></button>
+      </div>
+      <div class="ferr" id="offerErr"></div>
+      <p class="ofine">Cancel any time — the plan works until the end of the paid period. Payment goes through Stripe; we never see your card.</p>
+    </div>
+
+    <div class="panel recheck" id="recheck" hidden>
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></svg>
+        Check again
+      </h3>
+      <p class="hint" id="reckHint">A free account gets one check a month.</p>
+      <button type="button" class="btn btn-ghost" id="reck" style="margin-top:12px;">Check now</button>
+    </div>
+
     <div class="panel" style="margin-top:18px;">
       <h3>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg>
@@ -143,13 +178,79 @@
           + fact("Judge decision", c.decision)
           + fact("Watching since", c.createdAt ? when(c.createdAt) : "—");
 
+        /* Предложение показываем только когда проверка уже дала ответ: до этого
+           человеку нечего оценивать, а после — он видит ровно то, что теряет. */
+        var free = r.data.plan === "free";
+        var done = c.status === "found" || c.status === "not_found";
+        var offer = document.getElementById("offer");
+        offer.hidden = !(free && done);
+        offer.querySelectorAll(".obuy .btn").forEach(function (b) {
+          b.addEventListener("click", function () {
+            var btn = this;
+            CW.pending(btn, true, "Opening Stripe…");
+            CW.api("/api/billing/checkout", { plan: btn.dataset.plan }).then(function (x) {
+              CW.pending(btn, false);
+              if (x.status === 200 && x.data.url) return location.assign(x.data.url);
+              CW.err(document.getElementById("offerErr"), "Payments are not available right now. Write to support and we will turn it on by hand.");
+            });
+          });
+        });
+
+        // повторная проверка руками: бесплатным — раз в месяц, платным — когда угодно
+        var box = document.getElementById("recheck");
+        var btn = document.getElementById("reck");
+        var hint = document.getElementById("reckHint");
+        var fc = r.data.freeCheck || {};
+        box.hidden = false;
+        function paint() {
+          if (c.queued) {
+            btn.disabled = true;
+            btn.textContent = "In the queue…";
+            hint.textContent = "We are asking EOIR right now. The answer usually lands within a few minutes.";
+          } else if (free && !fc.left) {
+            btn.disabled = true;
+            btn.textContent = "Free check used";
+            hint.innerHTML = "Your free check for this month is used. The next one is on <b>"
+              + when(fc.resetsAt) + "</b> — or turn on watching above and we will check every 12 hours.";
+          } else {
+            btn.disabled = false;
+            btn.textContent = "Check now";
+            hint.textContent = free
+              ? "A free account gets one check a month. This is yours for " + new Date().toLocaleDateString("en-US", { month: "long" }) + "."
+              : "Your plan re-checks this case every 12 hours. You can also ask right now.";
+          }
+        }
+        paint();
+        btn.addEventListener("click", function () {
+          CW.pending(btn, true, "Asking EOIR…");
+          CW.api("/api/cases/" + c.id + "/check", {}).then(function (x) {
+            CW.pending(btn, false);
+            if (x.status === 402) { fc.left = 0; fc.resetsAt = x.data.resetsAt; return paint(); }
+            if (x.status !== 200) return;
+            c.queued = true;
+            if (x.data.freeCheck) fc = x.data.freeCheck;
+            paint();
+            setTimeout(function () { location.reload(); }, 20000);
+          });
+        });
+
+        /* Тумблер слежения честен: на бесплатном плане мы не следим, поэтому и
+           показывать его включённым нельзя — клик ведёт туда, где это решается. */
         var sw = document.getElementById("mon");
-        sw.classList.toggle("on", c.monitoring);
-        document.getElementById("monTxt").textContent = c.monitoring ? "Monitoring" : "Monitoring off";
+        var txt = document.getElementById("monTxt");
+        sw.classList.toggle("on", c.monitoring && !free);
+        sw.classList.toggle("locked", free);
+        txt.textContent = free ? "Not watching" : (c.monitoring ? "Monitoring" : "Monitoring off");
         sw.addEventListener("click", function () {
+          if (free) {
+            offer.scrollIntoView({ behavior: "smooth", block: "center" });
+            offer.classList.add("nudge");
+            setTimeout(function () { offer.classList.remove("nudge"); }, 900);
+            return;
+          }
           var on = !sw.classList.contains("on");
           sw.classList.toggle("on", on);
-          document.getElementById("monTxt").textContent = on ? "Monitoring" : "Monitoring off";
+          txt.textContent = on ? "Monitoring" : "Monitoring off";
           CW.api("/api/cases/monitoring", { id: c.id, on: on });
         });
 

@@ -93,6 +93,23 @@ function tooOften(key, limit, windowSec) {
 
 const MAX_CASES = 3;   // больше трёх дел на аккаунт не держим
 
+/* Бесплатно человек получает одну проверку в месяц: этого хватает понять, что
+   сервис говорит правду, и мало, чтобы жить без подписки — суд меняет даты
+   молча, и раз в месяц об этом узнают слишком поздно. Отметку кладём в marks:
+   ключ — год и месяц, поэтому первое число само всё обнуляет. */
+const monthKey = (t) => new Date((t || now()) * 1000).toISOString().slice(0, 7);
+
+function freeCheckState(u) {
+  const key = monthKey();
+  const used = !!q.usedMark.get(u.id, 'freecheck', key);
+  const d = new Date();
+  const next = Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1) / 1000;
+  return { left: used ? 0 : 1, used, resetsAt: Math.floor(next), month: key };
+}
+
+// true — проверку разрешили и записали; false — на этот месяц уже потрачена
+const takeFreeCheck = (u) => q.addMark.run(u.id, 'freecheck', monthKey(), now()).changes === 1;
+
 /* Оплата. Берём те же ссылки Stripe, что и у бота в телеграме: платёж уходит
    на страницу Stripe, а нам возвращается событие через веб-хук. Ссылку в
    браузере проверять нельзя — плательщика подтверждает только подпись Stripe. */
@@ -260,11 +277,12 @@ function publicUser(u) {
     cases: cases.map((c) => ({
       id: c.id, aNumber: c.a_number, country: c.country, status: c.status,
       name: c.name, court: c.court, hearingAt: c.hearing_at, decision: c.decision,
-      monitoring: !!c.monitoring, checkedAt: c.checked_at,
+      monitoring: !!c.monitoring, checkedAt: c.checked_at, queued: !!c.queued,
     })),
     events: q.events.all(u.id).map((e) => ({ kind: e.kind, text: e.text, at: e.created_at })),
     channels: q.channels.all(u.id).map((c) => ({ kind: c.kind, enabled: !!c.enabled, address: c.address, verified: !!c.verified })),
     prefs: { hearing: !!prefs.hearing, decision: !!prefs.decision, appeared: !!prefs.appeared, weekly: !!prefs.weekly },
+    freeCheck: freeCheckState(u),
   };
 }
 
@@ -441,6 +459,7 @@ async function applyResult(row, res) {
     // не достучались — отступаем, но не бесконечно: полчаса, час, два… до шести
     const back = Math.min(6 * 3600, 1800 * Math.pow(2, Math.min(4, row.fail_count || 0)));
     q.setCaseFail.run(now() + back, row.id);
+    q.unqueueCase.run(row.id);
     // три сбоя подряд — это уже не случайность, а повод посмотреть руками
     if ((row.fail_count || 0) + 1 === 3) {
       admin.event('⚠️', 'Дело не проверяется', [['Дело', label],
@@ -452,12 +471,14 @@ async function applyResult(row, res) {
 
   if (!res.found) {
     const first = !row.checked_at;
+    q.unqueueCase.run(row.id);
     q.setCaseResult.run('not_found', null, null, null, null, null, 'NOTFOUND', res.message || '', now(), nextCheck(), row.id);
     if (first) q.addEvent.run(row.user_id, row.id, 'checked', 'Checked — EOIR has no record for ' + label + ' yet', now());
     else if (row.status === 'found') q.addEvent.run(row.user_id, row.id, 'note', 'EOIR no longer returns this case', now());
     return { ok: true, found: false };
   }
 
+  q.unqueueCase.run(row.id);
   const changes = row.checked_at ? caseChanges(row, res) : [];
   const appeared = row.status === 'not_found' && res.found;
   q.setCaseResult.run('found', res.name || null, res.court || null, res.hearing || null,
@@ -941,8 +962,13 @@ async function api(req, res, url) {
     if (!/^[A-Z]{2}$/.test(nat)) return send(res, 400, { ok: false, error: 'pick the country from the list' });
     if (q.caseByNumber.get(me.id, a)) return send(res, 409, { ok: false, error: 'already added' });
     const mine = q.countCases.get(me.id).n;
-    if (planNow(me) === 'free' && mine >= 1) {
+    const free = planNow(me) === 'free';
+    if (free && mine >= 1) {
       return send(res, 402, { ok: false, error: 'free plan allows one case' });
+    }
+    // заведение дела и есть та самая бесплатная проверка — она же его первая
+    if (free && !takeFreeCheck(me)) {
+      return send(res, 402, { ok: false, error: 'free check used', resetsAt: freeCheckState(me).resetsAt });
     }
     // потолок на аккаунт: каждое дело — это наши запросы к EOIR, без границы аккаунт растащат
     if (mine >= MAX_CASES) {
@@ -950,6 +976,7 @@ async function api(req, res, url) {
     }
     q.addCase.run(me.id, a, c, nat, now());
     const row = q.caseByNumber.get(me.id, a);
+    q.queueCase.run(row.id, me.id);          // проверить сразу, не дожидаясь расписания
     q.addEvent.run(me.id, row.id, 'added', `Case A${a.slice(0, 3)}-${a.slice(3, 6)}-${a.slice(6)} added`, now());
     admin.event('📄', 'Новое дело', [['Кто', me.email], ['Дело', prettyA(a)], ['Гражданство', c],
       ['План', planNow(me) === 'free' ? 'бесплатный' : 'платный']]);
@@ -966,12 +993,35 @@ async function api(req, res, url) {
       id: c.id, aNumber: c.a_number, country: c.country, status: c.status,
       name: c.name, court: c.court, hearingAt: c.hearing_at, decision: c.decision,
       judge: c.judge, monitoring: !!c.monitoring, checkedAt: c.checked_at, createdAt: c.created_at,
-    }, events: q.caseEvents.all(c.id).map((e) => ({ kind: e.kind, text: e.text, at: e.created_at })) });
+      queued: !!c.queued,
+    }, events: q.caseEvents.all(c.id).map((e) => ({ kind: e.kind, text: e.text, at: e.created_at })),
+      plan: planNow(me), freeCheck: freeCheckState(me) });
   }
   if (oneCase && req.method === 'DELETE') {
     if (!me) return send(res, 401, { ok: false, error: 'no session' });
     q.dropCase.run(Number(oneCase[1]), me.id);
     return send(res, 200, { ok: true });
+  }
+
+  /* «Проверить сейчас». На бесплатном плане это и есть месячная проверка,
+     на платном — просто просьба не ждать расписания. */
+  const askCheck = /^\/api\/cases\/(\d+)\/check$/.exec(url);
+  if (askCheck && req.method === 'POST') {
+    if (!me) return send(res, 401, { ok: false, error: 'no session' });
+    const c = q.caseById.get(Number(askCheck[1]), me.id);
+    if (!c) return send(res, 404, { ok: false, error: 'not found' });
+    if (c.queued) return send(res, 200, { ok: true, queued: true });
+    if (tooOften('check:' + me.id, 12, 3600)) return send(res, 429, { ok: false, error: 'slow down' });
+
+    const state = freeCheckState(me);
+    if (planNow(me) === 'free') {
+      if (!takeFreeCheck(me)) {
+        return send(res, 402, { ok: false, error: 'free check used', resetsAt: state.resetsAt });
+      }
+    }
+    q.queueCase.run(c.id, me.id);
+    q.addEvent.run(me.id, c.id, 'note', 'Check requested', now());
+    return send(res, 200, { ok: true, queued: true, freeCheck: freeCheckState(me) });
   }
 
   if (url === '/api/cases/monitoring' && req.method === 'POST') {

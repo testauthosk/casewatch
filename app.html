@@ -75,6 +75,30 @@
 
     <div id="cases"></div>
 
+    <div class="offer" id="offer" hidden>
+      <div class="glow" aria-hidden="true"></div>
+      <div class="ohead">
+        <span class="pulse" aria-hidden="true"><i></i></span>
+        <div>
+          <h3>You have the answer. Now keep it.</h3>
+          <p>What the court shows today can change tomorrow — hearings are rescheduled and decisions entered without a word to anyone. A free account looks once a month; by then the date may have passed.</p>
+        </div>
+      </div>
+
+      <ul class="owhat">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Checked every 12 hours, around the clock</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Alerts by email, Telegram or WhatsApp</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Up to three cases on one account</li>
+      </ul>
+
+      <div class="obuy">
+        <button type="button" class="btn btn-primary" data-plan="month">Turn on watching — $9.99 / month</button>
+        <button type="button" class="btn btn-navy" data-plan="year">$75 for a year <span>save 37%</span></button>
+      </div>
+      <div class="ferr" id="offerErr"></div>
+      <p class="ofine">Cancel any time. Payment goes through Stripe; we never see your card.</p>
+    </div>
+
     <div class="plan-note" id="freeNote" hidden style="margin:22px 0 0;">
       <svg viewBox="0 0 24 24"><path d="M12 3 4 7v5c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V7z"/><path d="M9.5 12.5 11 14l3.5-3.5"/></svg>
       <div>
@@ -139,10 +163,14 @@
         return;
       }
 
-      var mon = user.cases.filter(function (c) { return c.monitoring; }).length;
+      // на бесплатном плане мы ничего не сторожим — счётчик не должен обещать обратное
+      var free = user.plan === "free";
+      var mon = free ? 0 : user.cases.filter(function (c) { return c.monitoring; }).length;
       var next = user.cases.map(function (c) { return c.hearingAt; }).filter(Boolean).sort()[0];
       document.getElementById("s-total").innerHTML = user.cases.length + ' <small>of 3</small>';
-      document.getElementById("s-mon").textContent = mon + " of " + user.cases.length;
+      document.getElementById("s-mon").innerHTML = free
+        ? '<small>not watching</small>'
+        : mon + " of " + user.cases.length;
       document.getElementById("s-next").innerHTML = next
         ? '<span>' + next.split(" · ")[0] + '</span>'
         : '<small>none scheduled</small>';
@@ -156,15 +184,29 @@
           + '<div><div class="nm"><b>' + (c.name || "Case " + CW.pretty(c.aNumber)) + '</b>' + badge(c) + '</div>'
           + '<div class="an">' + CW.pretty(c.aNumber) + ' · ' + c.country + '</div></div>'
           + cols
-          + '<div class="end"><span class="sw' + (c.monitoring ? " on" : "") + '"><i></i></span>'
+          + '<div class="end"><span class="sw' + (c.monitoring && user.plan !== "free" ? " on" : "")
+            + (user.plan === "free" ? " locked" : "") + '"><i></i></span>'
           + '<span class="upd">Checked ' + CW.ago(c.checkedAt) + '</span></div>'
           + '<svg class="go" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="m10 6 6 6-6 6"/></svg>'
           + '</article>';
       }).join("");
 
+      /* Предложение — только когда есть что оценивать: проверка уже дала ответ.
+         Пока идёт первая проверка человек всё равно смотрит не сюда. */
+      var answered = user.cases.some(function (c) { return c.status === "found" || c.status === "not_found"; });
+      var offer = document.getElementById("offer");
+      offer.hidden = !(free && answered);
+      document.getElementById("freeNote").hidden = !free || !offer.hidden;
+
       box.querySelectorAll(".sw").forEach(function (sw) {
         sw.addEventListener("click", function (e) {
           e.stopPropagation();          // переключатель не должен открывать дело
+          if (free) {                   // включать нечего: на бесплатном плане мы не следим
+            offer.scrollIntoView({ behavior: "smooth", block: "center" });
+            offer.classList.add("nudge");
+            setTimeout(function () { offer.classList.remove("nudge"); }, 900);
+            return;
+          }
           var on = !sw.classList.contains("on");
           sw.classList.toggle("on", on);
           CW.api("/api/cases/monitoring", { id: Number(sw.closest(".row-case").dataset.id), on: on });
@@ -177,6 +219,18 @@
         });
       });
     }
+
+    document.querySelectorAll("#offer .obuy .btn").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var btn = this;
+        CW.pending(btn, true, "Opening Stripe…");
+        CW.api("/api/billing/checkout", { plan: btn.dataset.plan }).then(function (x) {
+          CW.pending(btn, false);
+          if (x.status === 200 && x.data.url) return location.assign(x.data.url);
+          CW.err(document.getElementById("offerErr"), "Payments are not available right now — write to support and we will turn it on by hand.");
+        });
+      });
+    });
 
     function load() {
       return CW.api("/api/me").then(function (r) {
@@ -215,6 +269,8 @@
       CW.pending(btn, true, "Adding…");
       CW.api("/api/cases", { aNumber: a, country: c, natCode: picker.code() }).then(function (r) {
         CW.pending(btn, false);
+        if (r.status === 402 && r.data && r.data.error === "free check used")
+          return CW.err(err, "Your free check for this month is used. Turn on watching and we will check every 12 hours.");
         if (r.status === 402) return CW.err(err, "The Free plan keeps one case. Turn on monitoring to add more.");
         if (r.status === 409 && r.data && r.data.error === "account limit")
           return CW.err(err, "One account holds up to three cases. Remove one to add another.");
