@@ -170,8 +170,9 @@ async function answer(chatId, text) {
   return tell(HELP, [chatId]);
 }
 
-/* Кнопки команд в меню бота: телеграм рисует их сам, если список ему задать.
-   Ставим при каждом запуске — так список всегда совпадает с кодом. */
+/* Кнопки команд в меню бота. Бот служебный, поэтому список команд виден
+   только своим: телеграм умеет держать его отдельно для каждого чата, а из
+   общего списка мы его убираем — посторонний не увидит даже, что бот умеет. */
 async function setupMenu() {
   const commands = [
     { command: 'stats', description: 'Полные цифры сервиса' },
@@ -179,9 +180,15 @@ async function setupMenu() {
     { command: 'feed', description: 'Лента последних событий' },
     { command: 'ping', description: 'Жив ли сайт' },
   ];
-  const r = await api('setMyCommands', { commands });
-  await api('setChatMenuButton', { menu_button: { type: 'commands' } });
-  console.log('[admin] меню команд:', r && r.ok ? 'выставлено' : 'не вышло');
+  await api('deleteMyCommands', { scope: { type: 'default' } });
+  await api('deleteMyCommands', { scope: { type: 'all_group_chats' } });
+  let ok = 0;
+  for (const chat of CHATS()) {
+    const r = await api('setMyCommands', { commands, scope: { type: 'chat', chat_id: chat } });
+    if (r && r.ok) ok++;
+    await api('setChatMenuButton', { chat_id: chat, menu_button: { type: 'commands' } });
+  }
+  console.log('[admin] меню команд: выставлено своим —', ok, 'из', CHATS().length);
 }
 
 /* Долгий опрос. Своего веб-хука не заводим: он потребовал бы отдельного пути
@@ -203,8 +210,11 @@ async function listen() {
         offset = u.update_id + 1;
         const m = u.message;
         if (!m || !m.text) continue;
+        /* Посторонним не отвечаем вовсе. Любой ответ — уже подтверждение, что
+           бот живой и чей-то; молчание не даёт даже этого. В группы бота не
+           зовём: в BotFather у него выключено вступление в группы. */
         if (!allowed.has(String(m.chat.id))) {
-          console.warn('[admin] чужой чат:', m.chat.id);
+          console.warn('[admin] чужой чат:', m.chat.id, '—', String(m.from && m.from.username || '').slice(0, 24));
           continue;
         }
         await answer(m.chat.id, m.text);
