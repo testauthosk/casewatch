@@ -41,7 +41,16 @@ function tell(text, chats) {
   const list = chats || CHATS();
   for (const chat of list) {
     api('sendMessage', { chat_id: chat, text, parse_mode: 'HTML', disable_web_page_preview: true })
-      .then((r) => { if (!r.ok) console.warn('[admin] не доставлено:', JSON.stringify(r).slice(0, 160)); });
+      .then((r) => {
+        if (!r.ok) return console.warn('[admin] не доставлено:', JSON.stringify(r).slice(0, 160));
+        /* Сверка кодов символов: буквы в логах может испортить сам терминал,
+           а числа — нет. Слева что отправили, справа что телеграм сохранил. */
+        if (process.env.DEBUG_TG) {
+          const codes = (v) => [...String(v)].slice(0, 10).map((c) => c.codePointAt(0)).join(',');
+          console.log('[admin] коды исходные:', codes(text));
+          console.log('[admin] коды у телеграма:', codes((r.result && r.result.text) || ''));
+        }
+      });
   }
 }
 
@@ -182,6 +191,10 @@ async function listen() {
   const allowed = new Set(CHATS().map(String));
   let offset = 0;
   await setupMenu();
+  if (process.env.DEBUG_TG) {
+    console.log('[admin] коды из исходника:',
+      [...HELP].slice(0, 10).map((c) => c.codePointAt(0)).join(','));
+  }
   console.log('[admin] бот на связи, чатов:', allowed.size);
   for (;;) {
     try {
