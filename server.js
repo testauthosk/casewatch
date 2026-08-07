@@ -963,6 +963,20 @@ async function api(req, res, url) {
     /* Бот в телеграме живёт на другой машине и о своих событиях знает только
        сам. Пусть говорит о них сюда — а в админский чат всё уходит одним
        голосом, из одного места. */
+    /* Уборка тестовых аккаунтов. Удаление необратимо, поэтому доступно только
+       по рабочему секрету и всегда пишется в админский чат. */
+    if (url === '/api/worker/purge' && req.method === 'POST') {
+      const b = (await readBody(req)) || {};
+      const u = q.userByEmail.get(clean(b.email));
+      if (!u) return send(res, 404, { ok: false, error: 'no such user' });
+      const cases = q.countCases.get(u.id).n;
+      const paid = q.payments.all(u.id).length;
+      if (paid && !b.force) return send(res, 409, { ok: false, error: 'account has payments', paid });
+      db.prepare('DELETE FROM users WHERE id = ?').run(u.id);
+      admin.event('🧹', 'Аккаунт удалён', [['Почта', u.email], ['Дел было', String(cases)]]);
+      return send(res, 200, { ok: true, email: u.email, cases });
+    }
+
     /* Подписка — одна на человека, где бы он ни заплатил. Бот спрашивает сайт
        перед тем как пустить проверку, и рассказывает сюда о своих оплатах.
        Общей базы при этом нет намеренно: база бота лежит на машине с движком и
