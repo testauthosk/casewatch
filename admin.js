@@ -98,7 +98,9 @@ function botLines() {
   const when = mins < 2 ? 'только что' : mins < 90 ? mins + ' мин назад' : Math.round(mins / 60) + ' ч назад';
   return ['', '<b>Телеграм-бот</b> <i>(снимок ' + when + ')</i>',
     '\u00b7 людей: ' + (b.users || 0) + ', пришли за сутки: ' + (b.usersDay || 0),
-    '\u00b7 платят сейчас: ' + (b.subs || 0) + ' \u00b7 за 30 дней: ' + money(b.money30 || 0)
+    '· платят деньгами: ' + (b.subsPaid != null ? b.subsPaid : (b.subs || 0))
+      + (b.subsPaid != null && b.subs > b.subsPaid ? ' (+' + (b.subs - b.subsPaid) + ' выдано руками)' : '')
+      + ' · за 30 дней: ' + money(b.money30 || 0)
       + ' \u00b7 всего: ' + money(b.moneyAll || 0),
     '\u00b7 дел: ' + (b.cases || 0) + ', под наблюдением: ' + (b.watched || 0),
     '\u00b7 бесплатных проверок в этом месяце: ' + (b.freeMonth || 0)];
