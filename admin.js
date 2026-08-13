@@ -80,12 +80,21 @@ const count = {
   ticketsSince: one('SELECT COUNT(*) n FROM support WHERE created_at > ?'),
   moneySince: one('SELECT COALESCE(SUM(amount), 0) n FROM payments WHERE created_at > ?'),
   moneyAll: one('SELECT COALESCE(SUM(amount), 0) n FROM payments'),
+  // подписки на сайте за всё время = сколько разных аккаунтов хоть раз платили
+  subsSite: one('SELECT COUNT(DISTINCT user_id) n FROM payments'),
   tg: one('SELECT COUNT(*) n FROM users WHERE tg_id IS NOT NULL'),
   wa: one('SELECT COUNT(*) n FROM users WHERE wa_phone IS NOT NULL'),
   stuck: one('SELECT COUNT(*) n FROM cases WHERE fail_count >= 3'),
 };
 
 const money = (v) => '$' + Number(v || 0).toFixed(2);
+
+/* Последний снимок цифр телеграм-бота (или null, если воркер ещё не присылал). */
+function botSnap() {
+  const row = q.getKv.get('botstats');
+  if (!row) return null;
+  try { return JSON.parse(row.value) || null; } catch (e) { return null; }
+}
 
 /* Цифры телеграм-бота. Его база на другой машине, поэтому здесь лежит
    присланный воркером снимок — и мы честно пишем, когда он снят. */
@@ -108,6 +117,8 @@ function botLines() {
 
 function stats() {
   const t = now(), day = 86400;
+  const bs = botSnap() || {};
+  const siteSubs = count.subsSite(), botSubs = bs.subsAll || 0;
   return [
     '📊 <b>CaseCheck — цифры</b>',
     '',
@@ -115,6 +126,9 @@ function stats() {
     '· всего аккаунтов: ' + count.users() + ' (подтвердили почту ' + count.verified() + ')',
     '· пришли за сутки: ' + count.usersSince(t - day) + ', за неделю: ' + count.usersSince(t - 7 * day),
     '· телеграм привязан: ' + count.tg() + ' · WhatsApp: ' + count.wa(),
+    '',
+    '<b>Подписки за всё время</b>',
+    '· на сайте: ' + siteSubs + ' · в боте: ' + botSubs + ' · всего: ' + (siteSubs + botSubs),
     '',
     '<b>Деньги</b>',
     '· платят сейчас: ' + count.paying(t),
@@ -137,20 +151,31 @@ function stats() {
 /* Утренняя сводка: то же самое, но за прошедшие сутки и без воды. */
 function digest() {
   const t = now(), day = 86400;
-  const nobody = !count.usersSince(t - day) && !count.checkedSince(t - day)
-    && !count.alertsSince(t - day) && !count.moneySince(t - day);
-  if (nobody) return '🌅 <b>За сутки тихо</b>\nНовых людей нет, изменений по делам нет.';
-  return [
-    '🌅 <b>Итоги суток</b>',
-    '· новые аккаунты: ' + count.usersSince(t - day),
-    '· оплаты: ' + money(count.moneySince(t - day)),
-    '· проверок дел: ' + count.checkedSince(t - day),
-    '· изменений в делах: ' + count.alertsSince(t - day),
-    '· обращений: ' + count.ticketsSince(t - day),
-    count.stuck() ? '· ⚠️ застряли на проверке: ' + count.stuck() : '',
+  const bs = botSnap() || {};
+  const siteSubs = count.subsSite(), botSubs = bs.subsAll || 0;
+  /* Подписки — всегда, даже в тихий день: это итог за всё время, а не за сутки. */
+  const subs = [
     '',
-    'Подробнее — /stats',
-  ].filter(Boolean).join('\n');
+    '<b>Подписки за всё время</b>',
+    '· на сайте: ' + siteSubs,
+    '· в боте: ' + botSubs,
+    '· всего: ' + (siteSubs + botSubs),
+  ];
+  const quiet = !count.usersSince(t - day) && !count.checkedSince(t - day)
+    && !count.alertsSince(t - day) && !count.moneySince(t - day);
+  const head = quiet
+    ? ['🌅 <b>За сутки тихо</b>', 'Новых людей и изменений по делам за сутки нет.']
+    : [
+      '🌅 <b>Итоги суток</b>',
+      '· новые аккаунты: ' + count.usersSince(t - day),
+      '· оплаты: ' + money(count.moneySince(t - day)),
+      '· проверок дел: ' + count.checkedSince(t - day),
+      '· изменений в делах: ' + count.alertsSince(t - day),
+      '· обращений: ' + count.ticketsSince(t - day),
+      count.stuck() ? '· ⚠️ застряли на проверке: ' + count.stuck() : null,
+    ];
+  return head.concat(subs).concat(['', 'Подробнее — /stats'])
+    .filter((l) => l !== null).join('\n');
 }
 
 /* Последние события — чтобы понять, чем живёт сервис, не заходя в базу. */

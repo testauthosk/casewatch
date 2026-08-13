@@ -168,6 +168,8 @@ def bot_numbers():
             "users": one("SELECT COUNT(*) FROM users"),
             "usersDay": one("SELECT COUNT(*) FROM users WHERE created_at > ?", now_ts - 86400),
             "subs": one("SELECT COUNT(*) FROM subs WHERE expires_at > ?", now_ts),
+            # подписок в боте за всё время = сколько разных людей хоть раз подписывались
+            "subsAll": one("SELECT COUNT(DISTINCT tg_id) FROM subs"),
             # выданные руками не должны выглядеть как выручка
             "subsPaid": one("SELECT COUNT(*) FROM subs WHERE expires_at > ? AND source = 'stripe'", now_ts),
             "money30": one("SELECT COALESCE(SUM(amount),0) FROM payments WHERE created_at > ?", now_ts - 30 * 86400),
