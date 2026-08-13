@@ -118,7 +118,8 @@ function botLines() {
 function stats() {
   const t = now(), day = 86400;
   const bs = botSnap() || {};
-  const siteSubs = count.subsSite(), botSubs = bs.subsAll || 0;
+  // subsAll — подписчики бота за всё время; пока старый воркер его не шлёт, берём активных
+  const siteSubs = count.subsSite(), botSubs = bs.subsAll != null ? bs.subsAll : (bs.subs || 0);
   return [
     '📊 <b>CaseCheck — цифры</b>',
     '',
@@ -152,7 +153,8 @@ function stats() {
 function digest() {
   const t = now(), day = 86400;
   const bs = botSnap() || {};
-  const siteSubs = count.subsSite(), botSubs = bs.subsAll || 0;
+  // subsAll — подписчики бота за всё время; пока старый воркер его не шлёт, берём активных
+  const siteSubs = count.subsSite(), botSubs = bs.subsAll != null ? bs.subsAll : (bs.subs || 0);
   /* Подписки — всегда, даже в тихий день: это итог за всё время, а не за сутки. */
   const subs = [
     '',
