@@ -118,8 +118,8 @@ function botLines() {
 function stats() {
   const t = now(), day = 86400;
   const bs = botSnap() || {};
-  // subsAll — подписчики бота за всё время; пока старый воркер его не шлёт, берём активных
-  const siteSubs = count.subsSite(), botSubs = bs.subsAll != null ? bs.subsAll : (bs.subs || 0);
+  // платные подписчики бота за всё время; пока старый воркер не шлёт subsPaidAll — берём активных платных
+  const siteSubs = count.subsSite(), botSubs = bs.subsPaidAll != null ? bs.subsPaidAll : (bs.subsPaid || 0);
   return [
     '📊 <b>CaseCheck — цифры</b>',
     '',
@@ -128,7 +128,7 @@ function stats() {
     '· пришли за сутки: ' + count.usersSince(t - day) + ', за неделю: ' + count.usersSince(t - 7 * day),
     '· телеграм привязан: ' + count.tg() + ' · WhatsApp: ' + count.wa(),
     '',
-    '<b>Подписки за всё время</b>',
+    '<b>Платные подписки за всё время</b>',
     '· на сайте: ' + siteSubs + ' · в боте: ' + botSubs + ' · всего: ' + (siteSubs + botSubs),
     '',
     '<b>Деньги</b>',
@@ -153,12 +153,12 @@ function stats() {
 function digest() {
   const t = now(), day = 86400;
   const bs = botSnap() || {};
-  // subsAll — подписчики бота за всё время; пока старый воркер его не шлёт, берём активных
-  const siteSubs = count.subsSite(), botSubs = bs.subsAll != null ? bs.subsAll : (bs.subs || 0);
+  // платные подписчики бота за всё время; пока старый воркер не шлёт subsPaidAll — берём активных платных
+  const siteSubs = count.subsSite(), botSubs = bs.subsPaidAll != null ? bs.subsPaidAll : (bs.subsPaid || 0);
   /* Подписки — всегда, даже в тихий день: это итог за всё время, а не за сутки. */
   const subs = [
     '',
-    '<b>Подписки за всё время</b>',
+    '<b>Платные подписки за всё время</b>',
     '· на сайте: ' + siteSubs,
     '· в боте: ' + botSubs,
     '· всего: ' + (siteSubs + botSubs),
