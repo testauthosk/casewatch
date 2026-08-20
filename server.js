@@ -1225,7 +1225,7 @@ function seedDemo() {
 http.createServer((req, res) => {
   const url = req.url.split('?')[0];
   if (url === '/healthz') {
-    return send(res, 200, { ok: true, mail: mail.hasKey(), wa: wa.on(),
+    return send(res, 200, { ok: true, mail: mail.hasKey(), wa: wa.on(), waVia: wa.transport(),
       tg: !!(process.env.TG_BOT_TOKEN && process.env.TG_SUPPORT_CHAT) });
   }
   /* Веб-хук Stripe. Стоит до общего разбора тела: подпись считается по сырым
@@ -1292,7 +1292,7 @@ http.createServer((req, res) => {
     req.on('data', (c) => { size += c.length; if (size > 400000) return req.destroy(); chunks.push(c); });
     req.on('end', () => {
       const raw = Buffer.concat(chunks);
-      if (wa.sigOk(raw, req.headers['x-hub-signature-256']) === false) {
+      if (wa.sigOk(raw, req.headers) === false) {
         console.warn('[wa] подпись не сошлась');
         return send(res, 403, { ok: false, error: 'bad signature' });
       }
