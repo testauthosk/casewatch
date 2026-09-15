@@ -55,51 +55,93 @@
       Back to the site
     </a>
     <h1>Privacy Policy</h1>
-    <p class="upd">Last updated: August 6, 2026</p>
+    <p class="upd">Last updated: September 15, 2026</p>
 
-<p class="lead">Short version: we collect what is needed to check your case and reach you, we do not sell anything to anyone, and you can have it all deleted.</p>
+<p class="lead">Short version: we collect only what is needed to check your case and reach you. We never sell your data. You can delete all of it, and this page says exactly how and how fast.</p>
 <p class="note">CaseCheck is operated by <b>Immigrant App Inc</b>, 848 Brickell Ave, Suite 800, Miami, FL 33131, United States. Questions about this document: <a href="mailto:support@uscasecheck.com">support@uscasecheck.com</a>.</p>
+
+<h2>What CaseCheck does</h2>
+<p>CaseCheck looks up the status of U.S. immigration cases and alerts you when it changes. For immigration court cases it reads the public EOIR case information system. For USCIS cases it reads the USCIS Case Status API. CaseCheck is an independent service. It is not a government service and it does not give legal advice.</p>
 
 <h2>What we collect</h2>
 <ul class="dots">
   <li><b>Your email address</b> — it is your login and the main place we write to.</li>
   <li><b>Your password</b>, stored only as a scrypt hash. We cannot read it, and neither can anyone who steals the database.</li>
-  <li><b>Case details you enter</b>: the nine-digit A-Number and country of citizenship.</li>
-  <li><b>What the court publishes</b> about those cases: hearing date, court, judge decision, and the history of changes.</li>
+  <li><b>Court case details you enter</b>: the nine-digit A-Number and country of citizenship.</li>
+  <li><b>USCIS receipt numbers you enter</b> to check or watch a USCIS case (13 characters, for example IOE0123456789). USCIS treats receipt numbers as personally identifiable information (PII), and so do we. See the section <b>USCIS receipt numbers</b> below.</li>
+  <li><b>What the government publishes</b> about those cases: hearing date, court, decision, case status, and the history of changes.</li>
   <li><b>Channel identifiers you connect</b>: Telegram id and username, WhatsApp number, phone number for text messages.</li>
+  <li><b>Payment facts</b>: the plan you bought and the date. Card numbers go to Stripe. We never see them.</li>
   <li><b>Technical records</b>: sign-in times, the browser string of a session, and server logs kept for security.</li>
 </ul>
-<p>We do not ask for documents, photographs, immigration files, or family details. Do not send them to us.</p>
+<p>We do not collect location data, bank or card details, medical information, your contacts, documents, photographs, immigration files, or family details. Do not send them to us.</p>
 
-<h2>Why we collect it</h2>
-<p>To do the one thing you asked for: look up a case, watch it, and tell you when it changes. Email is also used for sign-in codes and account notices. Payment data is used to keep your subscription current.</p>
+<h2>Why we use it</h2>
+<p>For one purpose: to look up the cases you asked about, watch them, and tell you when they change. Email is also used for sign-in codes and account notices. Payment facts keep your subscription current. We do not use your data for advertising, and we do not build marketing profiles.</p>
 
-<h2>Who else touches your data</h2>
+<h2>USCIS receipt numbers</h2>
+<p>A USCIS receipt number identifies a real immigration case, so we treat it as personal information from the moment you type it in.</p>
 <ul class="dots">
-  <li><b>Railway</b> — hosting and the database.</li>
-  <li><b>Resend</b> — delivery of email (sign-in codes, alerts).</li>
-  <li><b>Stripe</b> — payments. Card details go to Stripe directly; we receive only the fact of payment and the plan.</li>
-  <li><b>Telegram, WhatsApp, and the SMS carrier</b> — only if you connect those channels, and only to deliver messages to you.</li>
+  <li><b>How we use it.</b> Our server sends the receipt number to the USCIS Case Status API for one purpose only: to get the current status and status history of that case, show it to you, and alert you when it changes. We use receipt numbers for nothing else.</li>
+  <li><b>Where it is stored.</b> If you only check a case once, the number is used for that single request and is not saved. If you add the case to your account for monitoring, the receipt number is stored in our database together with the status USCIS returned, for as long as the case stays in your account. The database is not reachable from the internet. Only the CaseCheck service can read it.</li>
+  <li><b>How it is protected.</b> Traffic between your browser, our server, and USCIS is encrypted (HTTPS). Our USCIS API credentials stay on the server and are never sent to the browser. Receipt numbers are masked in server logs. A stored receipt number is visible only to the account that added it and to the Immigrant App Inc staff who need access to run the service.</li>
+  <li><b>Who receives it.</b> Only USCIS, as part of the status query. We do not sell receipt numbers, share them with advertisers or other third parties, or use them to build profiles. We disclose them only when the law requires it.</li>
+  <li><b>Deleting it.</b> Remove the case from your account and the receipt number and its history are deleted at once. Deleting your account deletes all of them.</li>
 </ul>
-<p>We do not sell personal data, we do not share it with advertisers, and we do not build profiles for marketing. We disclose data only if the law requires it.</p>
+
+<h2>Who receives your data</h2>
+<ul class="dots">
+  <li><b>Railway</b> — hosts the site and the database. It handles your data only as our hosting provider.</li>
+  <li><b>Resend</b> — sends our email (sign-in codes, alerts). It sees your email address and the message we send.</li>
+  <li><b>Stripe</b> — processes payments. Card details go to Stripe directly. We receive only the fact of payment and the plan.</li>
+  <li><b>Telegram, WhatsApp (Meta), and the SMS carrier</b> — only if you connect that channel, and only to deliver our messages to you.</li>
+  <li><b>EOIR and USCIS</b> — receive the case number when we look up a case. They receive nothing else about you.</li>
+</ul>
+<p>These providers process your data only on our instructions and only to run the service. Each one is bound by a contract that requires protection at least as strong as this policy. They may not use or disclose your data for their own purposes, in any form, without your active consent. We do not share de-identified, anonymized, or pseudonymized data with anyone either.</p>
+
+<h2>We do not sell your data</h2>
+<p>We do not sell personal data, and we do not trade it for money or anything else of value. Not to advertisers, data brokers, partners, or anyone else. We disclose data only when the law requires it, for example under a valid court order, and we tell you about it when the law allows us to.</p>
+
+<h2>Your choices about sharing</h2>
+<p>Everything beyond your email address is your choice. Connecting Telegram, WhatsApp, or text messages is optional. The benefit: alerts arrive where you already look. The risk: those messages travel through that platform and appear on every device signed in to it, so anyone with access to that device or account can read them. The limit: we cannot guarantee delivery on networks we do not control. You can disconnect a channel at any time in your account.</p>
+<p>A case may concern another person. Add only cases that are yours or that you are authorized to follow. If you add someone else's case, you are responsible for having their permission, because alerts about their case will reach you.</p>
 
 <h2>Cookies and local storage</h2>
-<p>One cookie holds your signed-in session — without it you could not stay logged in. Your language choice is a cookie; the light or dark theme is stored in your browser only. There are no advertising or tracking cookies on this site.</p>
+<p>One cookie holds your signed-in session. Without it you could not stay logged in. Your language choice is a cookie. The light or dark theme is stored in your browser only. There are no advertising or tracking cookies on this site.</p>
 
 <h2>How long we keep it</h2>
-<p>Account and case data live for as long as your account exists. Sign-in codes expire in ten minutes. Session records expire after thirty days. Support messages are kept so we can follow up on them.</p>
+<ul class="dots">
+  <li><b>Account and case data</b> — as long as your account exists.</li>
+  <li><b>Dormant accounts</b> — if you do not sign in for 24 months, we email you a warning. If you still do not sign in within 30 days, we delete the account and every case in it.</li>
+  <li><b>Sign-in codes</b> — 10 minutes. <b>Session records</b> — 30 days. <b>Server logs</b> — 90 days.</li>
+  <li><b>Support messages</b> — 12 months after the last reply, so we can follow up.</li>
+  <li><b>Payment records</b> — as long as accounting law requires, without case details attached.</li>
+</ul>
 
-<h2>Deleting your data</h2>
-<p>Remove a case from inside your account and its history goes with it. To delete the whole account, write to <a href="mailto:support@uscasecheck.com">support@uscasecheck.com</a> from the address on the account — we delete it and the cases attached to it. Payment records are kept where accounting rules require, without case details attached.</p>
+<h2>Deleting your data and closing your account</h2>
+<ul class="dots">
+  <li><b>One case.</b> Remove it inside your account. The case, its numbers, and its history are deleted immediately.</li>
+  <li><b>Your whole account.</b> Write to <a href="mailto:support@uscasecheck.com">support@uscasecheck.com</a> from the address on your account, or use the Support page inside your account. We confirm within 2 business days and delete the account and all its cases within 30 days. Copies in backups are gone within 90 days. Deleted data cannot be recovered.</li>
+  <li><b>Closing your account</b> means the same thing: everything is deleted on the same schedule. Payment records stay only where accounting law requires, without case details.</li>
+</ul>
+
+<h2>If there is a data breach</h2>
+<p>If we learn that your data was accessed or disclosed without authorization, we will email you without undue delay, and no later than 72 hours after we confirm the breach. The email will say what happened, which data was involved, what we have done, and what you can do, for example change your password or watch for suspicious messages. We will also notify the authorities where the law requires it.</p>
+
+<h2>If CaseCheck changes hands</h2>
+<p>If Immigrant App Inc is sold, merges with another company, or closes, we will email you at least 30 days before your data moves anywhere. A new owner must follow this policy or one that protects you at least as well. If that is not the case, you get the choice to download your data or delete it before the transfer. If the service closes for good, we delete all user data, except payment records that the law requires us to keep.</p>
+
+<h2>Changes to this policy</h2>
+<p>When we change this policy in a meaningful way, we do not treat silence as agreement. We show you a plain-language summary of what changed and ask you to accept it before you continue using your account. Until you accept, your account keeps working under the old version for 30 days, and you can delete it instead. Small edits, such as fixing a typo or a contact detail, only get a new date at the top of this page.</p>
+
+<h2>California residents (CCPA)</h2>
+<p>If you live in California, you have the right to know what personal information we collect and how we use it, to correct it, to have it deleted, and to not be treated differently for using these rights. We do not sell personal information and we do not share it for cross-context behavioral advertising, so there is nothing to opt out of. To use these rights, email <a href="mailto:support@uscasecheck.com">support@uscasecheck.com</a> from your account address. We answer within 45 days. An authorized agent can act for you with your written permission.</p>
 
 <h2>Security</h2>
-<p>Traffic is encrypted in transit. Passwords are hashed with a salt. Sessions are signed cookies that a browser script cannot read. Sign-in always asks for a code from your email, so a leaked password alone is not enough to get in.</p>
+<p>Traffic is encrypted in transit. Passwords are hashed with a salt. Sessions are signed cookies that a browser script cannot read. Sign-in always asks for a code from your email, so a leaked password alone is not enough to get in. Case numbers and receipt numbers are masked in logs. Access to the database is limited to the service itself and to the staff who need it to run the service.</p>
 
 <h2>Children</h2>
 <p>The service is for adults. If a case concerns a minor, an adult must hold the account.</p>
-
-<h2>Changes</h2>
-<p>If this policy changes, the new version appears here with a new date, and account holders are told by email when the change is material.</p>
 
 <h2>Contact</h2>
 <p>Questions about your data: <a href="mailto:support@uscasecheck.com">support@uscasecheck.com</a>.</p>

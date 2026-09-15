@@ -842,7 +842,7 @@ header.scrolled{ box-shadow:0 10px 34px -20px rgba(16,30,56,.5); background:rgba
 .doc{ padding:clamp(30px,4vw,54px) 0 clamp(40px,5vw,72px); }
 .doc .wrap{ max-width:760px; }
 .doc h1{ font-size:clamp(28px,3.4vw,38px); margin-top:6px; }
-.doc .upd{ color:var(--muted); font-size:13px; margin-top:10px; }
+.doc .upd{ color:var(--ink2); font-size:14px; margin-top:10px; }
 .doc .lead{ font-size:17.5px; color:var(--ink2); line-height:1.62; margin-top:22px; }
 .doc h2{ font-size:20px; margin-top:34px; }
 .doc p{ margin-top:12px; line-height:1.68; color:var(--ink2); }
