@@ -193,6 +193,7 @@ for (const sql of [
   'ALTER TABLE cases ADD COLUMN queued INTEGER NOT NULL DEFAULT 0',
   'ALTER TABLE payments ADD COLUMN invoice TEXT',
   'ALTER TABLE payments ADD COLUMN mailed INTEGER NOT NULL DEFAULT 0',
+  'ALTER TABLE users ADD COLUMN policy_v TEXT',
 ]) { try { db.exec(sql); } catch (e) { /* колонка уже есть */ } }
 
 const now = () => Math.floor(Date.now() / 1000);
@@ -203,6 +204,7 @@ const q = {
   createUser: db.prepare(
     'INSERT INTO users (email, pass_hash, created_at) VALUES (?, ?, ?)'),
   setPass: db.prepare('UPDATE users SET pass_hash = ? WHERE id = ?'),
+  setPolicy: db.prepare('UPDATE users SET policy_v = ? WHERE id = ?'),
   markVerified: db.prepare('UPDATE users SET email_ok = 1 WHERE id = ?'),
   touch: db.prepare('UPDATE users SET last_seen = ? WHERE id = ?'),
 

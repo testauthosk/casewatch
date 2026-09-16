@@ -185,6 +185,12 @@ function grantPlan(userId, plan, amount, currency, ref, invoice, pdf) {
 
 /* Куда ведёт кнопка поддержки. Ссылка в настройках, чтобы поменять адрес
    без выкатки: пока не задана — ведём в самого бота, как в телеграме. */
+/* Политика меняется по-настоящему редко. Версия = дата правки privacy/terms;
+   кто зарегистрировался раньше этой даты и ещё не нажал «принимаю» — видит
+   сводку изменений в кабинете. Новые аккаунты приняли текущую версию при регистрации. */
+const POLICY_V = '2026-09-15';
+const POLICY_TS = Math.floor(Date.parse(POLICY_V + 'T00:00:00Z') / 1000);
+
 const SUPPORT = {
   tg: process.env.SUPPORT_TG_URL || 'https://t.me/eoircasestatus_bot',
   email: process.env.SUPPORT_EMAIL || 'support@uscasecheck.com',
@@ -283,6 +289,7 @@ function publicUser(u) {
     channels: q.channels.all(u.id).map((c) => ({ kind: c.kind, enabled: !!c.enabled, address: c.address, verified: !!c.verified })),
     prefs: { hearing: !!prefs.hearing, decision: !!prefs.decision, appeared: !!prefs.appeared, weekly: !!prefs.weekly },
     freeCheck: freeCheckState(u),
+    policy: { version: POLICY_V, pending: u.policy_v !== POLICY_V && u.created_at < POLICY_TS, graceUntil: POLICY_TS + 30 * 86400 },
   };
 }
 
@@ -807,6 +814,14 @@ async function api(req, res, url) {
   if (url === '/api/me' && req.method === 'GET') {
     if (!me) return send(res, 401, { ok: false, error: 'no session' });
     return send(res, 200, { ok: true, user: publicUser(me), support: SUPPORT });
+  }
+
+  /* Активное согласие на обновлённые privacy/terms — по кнопке, а не по факту использования. */
+  if (url === '/api/account/policy-accept' && req.method === 'POST') {
+    if (!me) return send(res, 401, { ok: false, error: 'no session' });
+    q.setPolicy.run(POLICY_V, me.id);
+    q.addEvent.run(me.id, null, 'note', 'Accepted the policy update of ' + POLICY_V, now());
+    return send(res, 200, { ok: true, version: POLICY_V });
   }
 
   /* Смена пароля: старый обязателен, иначе чужая открытая вкладка = чужой аккаунт.

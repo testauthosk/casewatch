@@ -11,9 +11,60 @@
       credentials: 'same-origin',
     }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (j) {
+        if (path === '/api/me' && r.status === 200 && j && j.user) CW.policyGate(j.user);
         return { status: r.status, data: j };
       });
     });
+  };
+
+  /* Обновили privacy/terms — молчание не считается согласием. Пока человек не нажал
+     «принимаю», кабинет показывает сводку изменений; в течение 30 дней можно отложить. */
+  CW.policyGate = function (user) {
+    var p = user && user.policy;
+    if (!p || !p.pending || document.getElementById('cwPolicy')) return;
+    var snoozed = false;
+    try { snoozed = sessionStorage.getItem('cwPolicySnooze') === p.version; } catch (e) {}
+    var canSnooze = p.graceUntil && Date.now() / 1000 < p.graceUntil;
+    if (snoozed && canSnooze) return;
+    if (!document.getElementById('cwPolicyCss')) {
+      var css = document.createElement('style'); css.id = 'cwPolicyCss';
+      css.textContent = '#cwPolicy{position:fixed;inset:0;z-index:1000;background:rgba(16,30,56,.55);display:flex;align-items:center;justify-content:center;padding:16px}' +
+        '#cwPolicy .box{background:var(--surface,#fff);color:var(--ink,#17233E);max-width:560px;width:100%;border-radius:16px;padding:26px 26px 22px;box-shadow:0 30px 80px -30px rgba(16,30,56,.5);font-size:15px;line-height:1.55}' +
+        '#cwPolicy h2{margin:0 0 6px;font-size:20px;line-height:1.25}#cwPolicy p{margin:0 0 10px;color:var(--ink2,#54617D)}' +
+        '#cwPolicy ul{margin:0 0 16px 18px;padding:0;color:var(--ink2,#54617D)}#cwPolicy li{margin:4px 0}' +
+        '#cwPolicy .acts{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}' +
+        '#cwPolicy .acts .btn{padding:11px 18px}#cwPolicy a{color:var(--ink,#17233E);text-decoration:underline;text-underline-offset:3px}' +
+        '#cwPolicy .later{margin-left:auto;background:none;border:0;color:var(--muted,#8B96AD);font:inherit;cursor:pointer;text-decoration:underline;text-underline-offset:3px}';
+      document.head.appendChild(css);
+    }
+    var d = document.createElement('div'); d.id = 'cwPolicy'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-labelledby', 'cwPolicyH');
+    d.innerHTML =
+      '<div class="box">' +
+        '<h2 id="cwPolicyH">Our Privacy Policy and Terms changed on September 15, 2026</h2>' +
+        '<p>What changed, in plain language:</p>' +
+        '<ul>' +
+          '<li>USCIS receipt numbers are treated as personal information: sent to USCIS only to retrieve a case status, stored only for cases you keep in your account.</li>' +
+          '<li>We added exact deletion timelines, what happens after a data breach or a change of owner, and your rights under California law.</li>' +
+          '<li>Policy changes now require your active acceptance. Continued use alone is no longer treated as agreement.</li>' +
+        '</ul>' +
+        '<div class="acts">' +
+          '<button type="button" class="btn btn-primary" id="cwPolicyOk">I accept</button>' +
+          '<a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>' +
+          '<a href="terms.html" target="_blank" rel="noopener">Terms</a>' +
+          (canSnooze ? '<button type="button" class="later" id="cwPolicyLater">Remind me later</button>' : '') +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(d);
+    var ok = document.getElementById('cwPolicyOk');
+    ok.addEventListener('click', function () {
+      CW.pending(ok, true, 'Saving…');
+      fetch('/api/account/policy-accept', { method: 'POST', credentials: 'same-origin' })
+        .then(function (r) { if (r.ok) { d.remove(); } else { CW.pending(ok, false); ok.textContent = 'Try again'; } })
+        .catch(function () { CW.pending(ok, false); ok.textContent = 'Try again'; });
+    });
+    var later = document.getElementById('cwPolicyLater');
+    if (later) later.addEventListener('click', function () { try { sessionStorage.setItem('cwPolicySnooze', p.version); } catch (e) {} d.remove(); });
+    ok.focus();
   };
 
   CW.err = function (box, text) {
